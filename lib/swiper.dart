@@ -120,7 +120,7 @@ class Swiper {
     _pageWidth = _calcPageWidth();
     
     // Go to initial page.
-    moveToIndex(startIndex);
+    moveToIndex(startIndex, speed: 0);
     
     // We're ready, set to visible.
     swiperElement.style.visibility = 'visible';
