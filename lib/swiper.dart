@@ -36,22 +36,36 @@ class Swiper {
   // -------------------
   // Events
   // -------------------
-  StreamController<int> _onDragStart;
+  StreamController<int> _onPageChange;
+  StreamController<int> _onTransitionEnd;
   
   /**
-   * Fired when the user starts dragging a draggable of this group.
+   * Fired when the current page changed.
+   * 
+   * The data is the page index. To get the page, use [currentPage].
    */
-  Stream<int> get onDragStart {
-    if (_onDragStart == null) {
-      _onDragStart = new StreamController<int>.broadcast(sync: true, 
-          onCancel: () => _onDragStart = null);
+  Stream<int> get onPageChange {
+    if (_onPageChange == null) {
+      _onPageChange = new StreamController<int>.broadcast(
+          onCancel: () => _onPageChange = null);
     }
-    return _onDragStart.stream;
+    return _onPageChange.stream;
   }
   
-  // -------------------
-  // Public Properties
-  // -------------------
+  /**
+   * Fired when the transition ends. When the user swipes again before the 
+   * previous transition ended, this event is only fired once, at the end of all 
+   * transitions.
+   * 
+   * The data is the page index. To get the page, use [currentPage].
+   */
+  Stream<int> get onTransitionEnd {
+    if (_onTransitionEnd == null) {
+      _onTransitionEnd = new StreamController<int>.broadcast(
+          onCancel: () => _onTransitionEnd = null);
+    }
+    return _onTransitionEnd.stream;
+  }
   
   
   // -------------------
@@ -114,6 +128,14 @@ class Swiper {
     _pointerDownSubs.add(container.onMouseDown.listen((e) => 
         _handlePointerDown(mouseEvent: e)));
     
+    // Install transition end listener.
+    container.onTransitionEnd.listen((_) {
+      _log.finest('Transition end event: currentIndex=$currentIndex');
+      if (_onTransitionEnd != null) {
+        _onTransitionEnd.add(currentIndex);
+      }
+    });
+    
     // Install window resize listener (but only after visibility has been set).
     new Future(() => 
         window.onResize.listen((e) => refreshSize()));
@@ -133,6 +155,11 @@ class Swiper {
    * The current page index.
    */
   int get currentIndex => _currentIndex;
+  
+  /**
+   * The current page.
+   */
+  Element get currentPage => container.children[currentIndex];
   
   /**
    * Recalculates and updates the sizes.
@@ -175,7 +202,11 @@ class Swiper {
     _setTranslate(_currentX, speed: speed);
      
     if (oldIndex != currentIndex) {
-      // TODO: Trigger move event.
+      _log.finest('Page change event: currentIndex=$currentIndex');
+      // Fire page change event.
+      if (_onPageChange != null) {
+        _onPageChange.add(currentIndex);
+      }
     }
   }
    
