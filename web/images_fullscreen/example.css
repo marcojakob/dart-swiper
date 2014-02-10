@@ -1,0 +1,23 @@
+.swiper {
+  overflow: hidden;
+  position: relative;
+  height: 333px;
+  text-align: center;
+  visibility: hidden;
+}
+
+.page-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.page-container > div {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+}
+
+.page-container img {
+  max-width: 100%;
+}
