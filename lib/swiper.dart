@@ -371,19 +371,22 @@ class Swiper {
       }
     }      
     
-    // Calculate the speed, depending how far we must move.
-    int newSpeed;
-    
     if (newIndex != _currentIndex) {
-      newSpeed = _adjustSpeed(this.speed, _pageWidth, _pageWidth - _moveDelta.x.abs());
+      int adjustedSpeed = _adjustSpeed(this.speed, _pageWidth, _pageWidth - _moveDelta.x.abs());
+      
+      // Move to new index.
+      moveToIndex(newIndex, speed: adjustedSpeed);
+      
+      // Ensure that no click event is fired.
+      _suppressClickEvent();
+      
     } else {
-      newSpeed = _adjustSpeed(this.speed, _pageWidth, _moveDelta.x.abs());
+      int adjustedSpeed = _adjustSpeed(this.speed, _pageWidth, _moveDelta.x.abs());
+      
+      // Move back to old index.
+      moveToIndex(newIndex, speed: adjustedSpeed);
     }
     
-    // Move back to current index.
-    moveToIndex(newIndex, speed: newSpeed);
-    
-    _suppressClickEvent();
   }
   
   /**
