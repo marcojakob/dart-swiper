@@ -79,7 +79,7 @@ class Swiper {
   int _currentIndex = 0;
   
   /// The x-position of the current page.
-  int _currentX = 0;
+  int _currentPageX = 0;
   
   /// Coordinates where the mousedown or touchstart events occured.
   Point _startCoords;
@@ -102,7 +102,7 @@ class Swiper {
    * of all swipe pages.
    */
   Swiper(Element swiperElement, {this.speed: 300, this.disableScroll: false,
-        this.disableMouse: false, this.disableTouch: false}) {
+        this.disableMouse: false, this.disableTouch: false, startIndex: 0}) {
     _log.finest('Initializing Swiper');
     
     // Get the pages container.
@@ -117,7 +117,10 @@ class Swiper {
     _stackPages();
     
     // Init size.
-    refreshSize();
+    _pageWidth = _calcPageWidth();
+    
+    // Go to initial page.
+    moveToIndex(startIndex);
     
     // We're ready, set to visible.
     swiperElement.style.visibility = 'visible';
@@ -138,7 +141,12 @@ class Swiper {
     
     // Install window resize listener (but only after visibility has been set).
     new Future(() => 
-        window.onResize.listen((e) => refreshSize()));
+        window.onResize.listen((e) {
+          _pageWidth = _calcPageWidth();
+          _setTranslateWithIndex(speed: 0);
+        }
+      )
+    );
   }
   
   /**
@@ -160,19 +168,6 @@ class Swiper {
    * The current page.
    */
   Element get currentPage => container.children[currentIndex];
-  
-  /**
-   * Recalculates and updates the sizes.
-   */
-  void refreshSize() {
-    // Get the page width.
-    // (Note: getBoundingClientRect() will only work in Safari from version 4).
-    _pageWidth = container.getBoundingClientRect().width.round();
-     
-    _log.finest('Refreshing: pageWidth=$_pageWidth');
-     
-    moveToIndex(currentIndex, speed: 0);
-  }
    
   /**
    * Moves to the page at [index]. 
@@ -197,9 +192,7 @@ class Swiper {
       _currentIndex = index;
     }
     
-    _currentX = -(currentIndex * _pageWidth);
-     
-    _setTranslate(_currentX, speed: speed);
+    _setTranslateWithIndex(speed: speed);
      
     if (oldIndex != currentIndex) {
       _log.finest('Page change event: currentIndex=$currentIndex');
@@ -344,7 +337,7 @@ class Swiper {
       _moveDelta = new Point(_addResistance(_moveDelta.x), _moveDelta.y);
       
       // Translate to new x-position.
-      _setTranslate(_currentX - _moveDelta.x, speed: 0);
+      _setTranslateWithX(_currentPageX - _moveDelta.x, speed: 0);
     }
   }
   
@@ -438,12 +431,32 @@ class Swiper {
   }
   
   /**
+   * Updates the page width.
+   */
+  int _calcPageWidth() {
+    // Get the page width.
+    // (Note: getBoundingClientRect() will only work in Safari from version 4).
+    return container.getBoundingClientRect().width.round();
+  }
+  
+  /**
+   * Sets the transform translate CSS property on the [container] to the 
+   * x value calculated with [currentIndex] and [_pageWidth].
+   * 
+   * Also sets [speed] as the duration of the transition animation.
+   */
+  void _setTranslateWithIndex({int speed: 0}) {
+    _currentPageX = -(currentIndex * _pageWidth);
+    _setTranslateWithX(_currentPageX, speed: speed);
+  }
+  
+  /**
    * Sets the transform translate CSS property on the [container] to the 
    * specified [x] value.
    * 
    * Also sets [speed] as the duration of the transition animation.
    */
-  void _setTranslate(int x, {int speed: 0}) {
+  void _setTranslateWithX(int x, {int speed: 0}) {
     _log.finest('Setting translate: x=$x, speed=$speed');
     
     container.style.transitionDuration = '${speed}ms';
