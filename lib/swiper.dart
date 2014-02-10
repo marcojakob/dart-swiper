@@ -175,7 +175,7 @@ class Swiper {
    * The [speed] is the duration of the transition in milliseconds. 
    * If no [speed] is provided, the speed attribute of this [Swiper] is used.
    */
-  void moveToIndex(int index, {int speed}) {
+  void moveToIndex(int index, {int speed, bool noPageChangeEvent: false}) {
     if (speed == null) {
       speed = this.speed;
     }
@@ -194,7 +194,7 @@ class Swiper {
     
     _setTranslateWithIndex(speed: speed);
      
-    if (oldIndex != currentIndex) {
+    if (oldIndex != currentIndex && !noPageChangeEvent) {
       _log.finest('Page change event: currentIndex=$currentIndex');
       // Fire page change event.
       if (_onPageChange != null) {
