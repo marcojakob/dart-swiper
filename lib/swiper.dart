@@ -196,22 +196,23 @@ class Swiper {
     
     _setTranslateWithIndex(speed: speed);
      
-    if (oldIndex != currentIndex && !noPageChangeEvent) {
-      _log.finest('Page change event: currentIndex=$currentIndex');
+    if (oldIndex != currentIndex) {
+      
       // Fire page change event.
-      if (_onPageChange != null) {
-        _onPageChange.add(currentIndex);
+      if (!noPageChangeEvent) {
+        _log.finest('Page change event: currentIndex=$currentIndex');
+        if (_onPageChange != null) {
+          _onPageChange.add(currentIndex);
+        }
       }
-    }
     
-    if (speed <= 0) {
-      // No transition end event fired when speed is 0 --> Manually fire it.
-      container.onTransitionEnd.listen((_) {
+      // Manually fire transition event if speed is 0 as transitionEnd event won't fire.
+      if (speed <= 0) {
         _log.finest('Transition ended (no animation): currentIndex=$currentIndex');
         if (_onTransitionEnd != null) {
           _onTransitionEnd.add(currentIndex);
         }
-      });
+      }
     }
   }
    
