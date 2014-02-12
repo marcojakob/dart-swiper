@@ -103,7 +103,7 @@ class Swiper {
    */
   Swiper(Element swiperElement, {this.speed: 300, this.disableScroll: false,
         this.disableMouse: false, this.disableTouch: false, startIndex: 0}) {
-    _log.finest('Initializing Swiper');
+    _log.finer('Initializing Swiper');
     
     // Get the pages container.
     container = swiperElement.children[0];
@@ -133,7 +133,7 @@ class Swiper {
     
     // Install transition end listener.
     container.onTransitionEnd.listen((_) {
-      _log.finest('Transition ended (with animation): currentIndex=$currentIndex');
+      _log.finer('Transition ended (with animation): currentIndex=$currentIndex');
       if (_onTransitionEnd != null) {
         _onTransitionEnd.add(currentIndex);
       }
@@ -182,7 +182,7 @@ class Swiper {
       speed = this.speed;
     }
      
-    _log.finest('Moving to index: index=$index, speed=$speed');
+    _log.finer('Moving to index: index=$index, speed=$speed');
     
     int oldIndex = currentIndex;
      
@@ -200,7 +200,7 @@ class Swiper {
       
       // Fire page change event.
       if (!noPageChangeEvent) {
-        _log.finest('Page change event: currentIndex=$currentIndex');
+        _log.finer('Page change event: currentIndex=$currentIndex');
         if (_onPageChange != null) {
           _onPageChange.add(currentIndex);
         }
@@ -208,7 +208,7 @@ class Swiper {
     
       // Manually fire transition event if speed is 0 as transitionEnd event won't fire.
       if (speed <= 0) {
-        _log.finest('Transition ended (no animation): currentIndex=$currentIndex');
+        _log.finer('Transition ended (no animation): currentIndex=$currentIndex');
         if (_onTransitionEnd != null) {
           _onTransitionEnd.add(currentIndex);
         }
@@ -407,7 +407,7 @@ class Swiper {
    */
   void _suppressClickEvent() {
     StreamSubscription clickSub = container.onClick.listen((event) {
-      _log.finest('Suppressing a click event');
+      _log.finer('Suppressing a click event');
       event.stopPropagation();
       event.preventDefault();
     });
@@ -415,7 +415,7 @@ class Swiper {
     // Wait until the end of event loop to see if a click event is fired.
     // Then cancel the listener.
     new Future(() {
-      _log.finest('Cancel suppressing click events');  
+      _log.finer('Cancel suppressing click events');  
       clickSub.cancel();
       clickSub = null;
     });
@@ -433,7 +433,6 @@ class Swiper {
    * sliding right.
    */
   int _addResistance(int deltaX) {
-    
     bool firstPage = !hasPrev();
     bool lastPage = !hasNext();
     
