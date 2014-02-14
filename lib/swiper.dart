@@ -142,8 +142,7 @@ class Swiper {
     // Install window resize listener (but only after visibility has been set).
     new Future(() => 
         window.onResize.listen((e) {
-          _pageWidth = _calcPageWidth();
-          _setTranslateWithIndex(speed: 0);
+          refreshSize();
         }
       )
     );
@@ -246,6 +245,14 @@ class Swiper {
    */
   bool hasPrev() {
     return currentIndex > 0;
+  }
+
+  /**
+   * Updates and refreshes the size.
+   */
+  void refreshSize() {
+    _pageWidth = _calcPageWidth();
+    _setTranslateWithIndex(speed: 0);
   }
   
   /**
