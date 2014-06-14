@@ -3,11 +3,12 @@ library swiper;
 import 'dart:html';
 import 'dart:async';
 import 'package:logging/logging.dart';
+import 'package:dnd/drag_detector.dart';
 
 final _log = new Logger('swiper');
 
 /**
- * A touch (and mouse) slider for swiping through images and html.
+ * A touch and mouse slider for swiping through images and html.
  */
 class Swiper {
   /// How many pixels until a swipe is detected.
@@ -19,19 +20,8 @@ class Swiper {
   // --------------
   // Options
   // --------------
-  
-  /// Speed of prev and next transitions in milliseconds. Default is 300.
-  int speed;
-  
-  /// Stop any touches on the container from scrolling the page. Default is false.
-  bool disableScroll;
-  
-  /// Disable swiping with touch events.
-  bool disableTouch;  
-
-  /// Disable swiping with mouse events.
-  bool disableMouse;
-  
+  /// Speed of prev and next transitions in milliseconds. 
+  int speed = 300;
   
   // -------------------
   // Events
@@ -71,38 +61,38 @@ class Swiper {
   // -------------------
   // Private Properties
   // -------------------
+  /// The [DragDetector] used to track drags on the [container].
+  DragDetector _dragDetector;
   
   /// Width of one slide.
   int _pageWidth;
   
   /// The current page index.
-  int _currentIndex = 0;
+  int _currentIndex;
   
   /// The x-position of the current page.
-  int _currentPageX = 0;
+  int _currentPageX;
   
-  /// Coordinates where the mousedown or touchstart events occured.
-  Point _startCoords;
+  /// The current transform translate CSS property on [container].
+  int _currentTranslateX;
   
-  /// Delta movement of touchmove or mousemove. Positive x-value means right,
-  /// positive y-value means down.
-  Point _moveDelta = const Point(0, 0);
-  
-  /// Used for testing first move event.
-  bool _isScrolling;
-  
-  // Track the listener subscriptions to later be able to unsubscribe.
-  List<StreamSubscription> _pointerDownSubs = [];
-  List<StreamSubscription> _pointerMoveAndUpSubs = [];
+  /// Tracks listener subscriptions.
+  List<StreamSubscription> _subs = [];
   
   /**
    * Creates a new [Swiper]. 
    * 
    * The [swiperElement] must contain a child element that is the **container**
    * of all swipe pages.
+   * 
+   * You can provide an optional [startIndex] for the initial index that should
+   * be displayed.
+   * 
+   * When [disableTouch] is set to true, swiping with touch will be ignored.
+   * When [disableMouse] is set to true, swiping with mouse will be ignored.
    */
-  Swiper(Element swiperElement, {this.speed: 300, this.disableScroll: false,
-        this.disableMouse: false, this.disableTouch: false, startIndex: 0}) {
+  Swiper(Element swiperElement, {startIndex: 0, disableTouch: false, 
+                                 disableMouse: false}) {
     _log.finer('Initializing Swiper');
     
     // Get the pages container.
@@ -125,11 +115,17 @@ class Swiper {
     // We're ready, set to visible.
     swiperElement.style.visibility = 'visible';
 
-    // Install pointer down event listeners.
-    _pointerDownSubs.add(container.onTouchStart.listen((e) => 
-        _handlePointerDown(touchEvent: e)));
-    _pointerDownSubs.add(container.onMouseDown.listen((e) => 
-        _handlePointerDown(mouseEvent: e)));
+    // Set up the DragDetector on the [container].
+    _dragDetector = new DragDetector.forElement(container, 
+        disableTouch: disableTouch, disableMouse: disableMouse);
+    
+    // Swiping is only done horizontally.
+    _dragDetector.horizontalOnly = true;
+    
+    // Listen for drag events.
+    _subs.add(_dragDetector.onDrag.listen(_handleDrag));
+    _subs.add(_dragDetector.onDragEnd.listen(_handleDragEnd));
+    
     
     // Install transition end listener.
     container.onTransitionEnd.listen((_) {
@@ -177,13 +173,9 @@ class Swiper {
    * If [noPageChangeEvent] is set to true, no page change event is fired.
    */
   void moveToIndex(int index, {int speed, bool noPageChangeEvent: false}) {
-    if (speed == null) {
-      speed = this.speed;
-    }
-     
     _log.finer('Moving to index: index=$index, speed=$speed');
     
-    int oldIndex = currentIndex;
+    int oldIndex = _currentIndex;
      
     if (index < 0) {
       _currentIndex = 0;
@@ -193,25 +185,24 @@ class Swiper {
       _currentIndex = index;
     }
     
-    _setTranslateWithIndex(speed: speed);
-     
-    if (oldIndex != currentIndex) {
-      
+    if (oldIndex != _currentIndex) {
       // Fire page change event.
       if (!noPageChangeEvent) {
-        _log.finer('Page change event: currentIndex=$currentIndex');
+        _log.finer('Page change event: currentIndex=$_currentIndex');
         if (_onPageChange != null) {
-          _onPageChange.add(currentIndex);
+          _onPageChange.add(_currentIndex);
         }
       }
-    
-      // Manually fire transition event if speed is 0 as transitionEnd event won't fire.
-      if (speed <= 0) {
-        _log.finer('Transition ended (no animation): currentIndex=$currentIndex');
-        if (_onTransitionEnd != null) {
-          _onTransitionEnd.add(currentIndex);
-        }
-      }
+      
+      // The index changed, update current page x. 
+      _updateCurrentPageX();
+     
+      // Set new translate and make sure the transitionEnd event is fired.
+      _setTranslateX(_currentPageX, speed: speed, forceTransitionEndEvent: true);
+      
+    } else {
+      // No change in index. Move back to current page.
+      _setTranslateX(_currentPageX, speed: speed);
     }
   }
    
@@ -252,192 +243,78 @@ class Swiper {
    */
   void refreshSize() {
     _pageWidth = _calcPageWidth();
-    _setTranslateWithIndex(speed: 0);
+    _updateCurrentPageX();
+    _setTranslateX(_currentPageX, speed: 0);
   }
   
   /**
-   * Unistalls all listeners.
+   * Unistalls all listeners. This will return the [container] back to its 
+   * pre-init state.
    */
   void destroy() {
-    _pointerDownSubs.forEach((sub) => sub.cancel());
-    _pointerDownSubs.clear();
+    _subs.forEach((sub) => sub.cancel());
+    _subs.clear();
+    _dragDetector.destroy();
+    _dragDetector = null;
   }
   
   /**
-   * Handle event when pointer is activated.
-   * 
-   * Provide a [touchEvent] when **touchstart** event are fired.
-   * Provide a [mouseEvent] when a **mousedown** event is fired.
+   * Handles drag.
    */
-  void _handlePointerDown({TouchEvent touchEvent, MouseEvent mouseEvent}) {
+  void _handleDrag(DragEvent dragEvent) {
+    int deltaX = _calcDelta(dragEvent.startCoords.x, dragEvent.coords.x);
     
-    if (touchEvent != null) {
-      // Stop here if touch is disabled.
-      if (disableTouch) return;
-      
-      _startCoords = touchEvent.touches[0].page;
-      
-      // Attach pointer-move and pointer-up listeners.
-      _pointerMoveAndUpSubs.add(container.onTouchMove.listen((e) => 
-          _handlePointerMove(touchEvent: e)));
-      _pointerMoveAndUpSubs.add(document.onTouchEnd.listen((e) => 
-          _handlePointerUp(touchEvent: e)));
-      
-    } else {
-      // Stop here if touch is disabled.
-      if (disableMouse) return;
-      
-      _startCoords = mouseEvent.page;
-      
-      // Attach move and end listeners.
-      _pointerMoveAndUpSubs.add(container.onMouseMove.listen((e) => 
-          _handlePointerMove(mouseEvent: e)));
-      _pointerMoveAndUpSubs.add(document.onMouseUp.listen((e) => 
-          _handlePointerUp(mouseEvent: e)));
-      
-      // Prevent default on everything except for the following html elements.
-      Element target = mouseEvent.target;
-      if (!(target is SelectElement || target is InputElement ||
-            target is TextAreaElement || target is ButtonElement)) {
-        mouseEvent.preventDefault();
-      }
-    }
-    
-    _log.finest('Pointer down: startCoords=$_startCoords');
-    
-    // Reset.
-    _moveDelta = const Point(0, 0);
-    _isScrolling = null;
-  }
-  
-  /**
-   * Handle pointer move event.
-   * 
-   * Provide a [touchEvent] when **touchmove** event are fired.
-   * Provide a [mouseEvent] when a **mousemove** event is fired.
-   */
-  void _handlePointerMove({TouchEvent touchEvent, MouseEvent mouseEvent}) {
-    
-    if (touchEvent != null) {
-      // Exit when double touch gesture is detected (pinching).
-      if (touchEvent.touches.length > 1) {
-        _isScrolling = true;        
-        return;
-      }
-      
-      // Measure change in x and y.
-      _moveDelta = _startCoords - touchEvent.touches[0].page;
-      
-      // Determine if scrolling test has already run during this move operation.
-      if (_isScrolling == null) {
-        // Test for vertical scrolling.
-        _isScrolling = _moveDelta.y.abs() > _moveDelta.x.abs();
-        _log.finest('Is scrolling: $_isScrolling');
-      }
+    _log.finest('Drag: deltaX=$deltaX');
 
-      // Prevent native scrolling.
-      if (disableScroll || // Prevent all scrolling.
-          !_isScrolling) { // Prevent only when swiping.
-        touchEvent.preventDefault();
-      }
-      
-    } else { // MouseEvent.
-      
-      // Measure change in x and y.
-      _moveDelta = _startCoords - mouseEvent.page;
-      
-      // Mouse is never scrolling.
-      _isScrolling = false;
-    }
+    // Increases resistance if necessary.
+    deltaX = _addResistance(deltaX);
     
-    _log.finest('Pointer move: moveDelta=$_moveDelta');
-    
-    if (!_isScrolling) {
-      // Increases resistance if necessary 
-      _moveDelta = new Point(_addResistance(_moveDelta.x), _moveDelta.y);
-      
-      // Translate to new x-position.
-      _setTranslateWithX(_currentPageX - _moveDelta.x, speed: 0);
-    }
+    // Translate to new x-position.
+    _setTranslateX(_currentPageX - deltaX, speed: 0);
   }
   
   /**
-   * Handle pointer up event.
-   * 
-   * Provide a [touchEvent] when **touchend** event are fired.
-   * Provide a [mouseEvent] when a **mouseup** event is fired.
+   * Handles drag end.
    */
-  void _handlePointerUp({TouchEvent touchEvent, MouseEvent mouseEvent}) {
-    _log.finest('Pointer up');
+  void _handleDragEnd(DragEvent dragEvent) {
+    int deltaX = _calcDelta(dragEvent.startCoords.x, dragEvent.coords.x);
     
-    // Cancel the all subscriptions that were set up in pointer down.
-    _pointerMoveAndUpSubs.forEach((sub) => sub.cancel());
-    _pointerMoveAndUpSubs.clear();
-
-    // Stop if user is scrolling.
-    if (_isScrolling == null || _isScrolling) return;
+    _log.finest('DragEnd: deltaX=$deltaX');
     
-    int newIndex = _currentIndex;
+    int index = _currentIndex;
     
     // Determine if we are past the threshold.
-    if (_moveDelta.x.abs() > DISTANCE_THRESHOLD) {
+    if (deltaX.abs() > DISTANCE_THRESHOLD) {
       // Determine direction of swipe.
-      bool directionRight = _moveDelta.x > 0;
+      bool directionRight = deltaX > 0;
       
       if (directionRight && hasNext()) {
-        newIndex++;
+        index++;
       } else if (!directionRight && hasPrev()){
-        newIndex--;
+        index--;
       }
     }      
     
-    if (newIndex != _currentIndex) {
-      int adjustedSpeed = _adjustSpeed(this.speed, _pageWidth, _pageWidth - _moveDelta.x.abs());
-      
-      // Move to new index.
-      moveToIndex(newIndex, speed: adjustedSpeed);
-      
-      // Ensure that no click event is fired.
-      _suppressClickEvent();
-      
-    } else {
-      int adjustedSpeed = _adjustSpeed(this.speed, _pageWidth, _moveDelta.x.abs());
-      
-      // Move back to old index.
-      moveToIndex(newIndex, speed: adjustedSpeed);
-    }
-    
+    // Move to index (might be the same as the current index).
+    moveToIndex(index);
   }
   
   /**
-   * Makes sure that the next click event is ignored.
+   * Calculates the delta movement between [startX] and [endX] coordinates.
+   * 
+   * * Result > 0 means sliding to the RIGHT slide.
+   * * Result < 0 means sliding to the LEFT slide.
    */
-  void _suppressClickEvent() {
-    StreamSubscription clickSub = container.onClick.listen((event) {
-      _log.finer('Suppressing a click event');
-      event.stopPropagation();
-      event.preventDefault();
-    });
-    
-    // Wait until the end of event loop to see if a click event is fired.
-    // Then cancel the listener.
-    new Future(() {
-      _log.finer('Cancel suppressing click events');  
-      clickSub.cancel();
-      clickSub = null;
-    });
-  }
-  
-  /**
-   * Helper method to adjusts the speed proportionally to the [actualDistance].
-   */
-  int _adjustSpeed(int fullSpeed, int fullDistance, int actualDistance) {
-    return (fullSpeed / fullDistance * actualDistance).round();
+  int _calcDelta(int startX, int endX) {
+    return startX - endX;
   }
   
   /**
    * Adds move resistance if first page and sliding left or last page and
    * sliding right.
+   * 
+   * * [deltaX] > 0 means user is sliding to the RIGHT slide.
+   * * [deltaX] < 0 means user is sliding to the LEFT slide.
    */
   int _addResistance(int deltaX) {
     bool firstPage = !hasPrev();
@@ -462,30 +339,63 @@ class Swiper {
   }
   
   /**
-   * Sets the transform translate CSS property on the [container] to the 
-   * x value calculated with [currentIndex] and [_pageWidth].
-   * 
-   * Also sets [speed] as the duration of the transition animation.
+   * Calculates the [_currentPageX] from [_currentIndex] and [_pageWidth].
+   * This update must be called whenever [_currentIndex] or [_pageWidth] 
+   * changes.
    */
-  void _setTranslateWithIndex({int speed: 0}) {
-    _currentPageX = -(currentIndex * _pageWidth);
-    _setTranslateWithX(_currentPageX, speed: speed);
+  void _updateCurrentPageX() {
+    _currentPageX = -(_currentIndex * _pageWidth);
   }
   
   /**
    * Sets the transform translate CSS property on the [container] to the 
    * specified [x] value.
    * 
-   * Also sets [speed] as the duration of the transition animation.
+   * * [x] > 0 moves the [container] to the RIGHT (shows slide on the LEFT).
+   * * [x] < 0 moves the [container] to the LEFT (shows slide on the RIGHT).
+   * 
+   * Optionally the [speed] can be set as duration of the transition animation.
+   * If no [speed] is specified, the default speed is used (proportionally 
+   * adjusted to change in [x]).
+   * 
+   * A transitionEnd event is automatically fired except if the transition
+   * duration is 0ms. If a transitionEnd event is required even in the case of 
+   * 0ms duration, the [forceTransitionEndEvent] must be set to true.
    */
-  void _setTranslateWithX(int x, {int speed: 0}) {
+  void _setTranslateX(int x, {int speed, bool forceTransitionEndEvent: false}) {
+    if (speed == null) {
+      speed = _adjustSpeed(this.speed, _pageWidth, (x - _currentTranslateX).abs()); 
+    }
+    
     _log.finest('Setting translate: x=$x, speed=$speed');
+    
+    _currentTranslateX = x;
     
     container.style.transitionDuration = '${speed}ms';
     
     // Adding `translateZ(0)` to activate GPU hardware-acceleration in 
-    // browsers that support this.
+    // browsers that support this (a bit of a hack).
     container.style.transform = 'translate(${x}px, 0) translateZ(0)';
+    
+    
+    // Manually fire transition event if speed is 0 as transitionEnd event won't fire.
+    if (forceTransitionEndEvent && speed <= 0) {
+      _log.finer('Transition ended (no animation): currentIndex=$currentIndex');
+      if (_onTransitionEnd != null) {
+        _onTransitionEnd.add(currentIndex);
+      }
+    }
+  }
+  
+  /**
+   * Helper method to adjusts the speed proportionally to the [actualDistance].
+   */
+  int _adjustSpeed(int speed, int pageDistance, int actualDistance) {
+    if (actualDistance > pageDistance) {
+      return speed;
+    }
+    
+    return (speed / pageDistance * actualDistance).round();
   }
 }
 

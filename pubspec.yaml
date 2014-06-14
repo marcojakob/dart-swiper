@@ -6,5 +6,7 @@ homepage: https://github.com/marcojakob/dart-swiper
 dependencies:
   browser: any
   logging: any
+  dnd:
+    path: ../dart-dnd
 dev_dependencies:
   intl: any
