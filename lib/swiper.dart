@@ -93,7 +93,7 @@ class Swiper {
    */
   Swiper(Element swiperElement, {startIndex: 0, disableTouch: false, 
                                  disableMouse: false}) {
-    _log.finer('Initializing Swiper');
+    _log.fine('Initializing Swiper');
     
     // Get the pages container.
     container = swiperElement.children[0];
@@ -129,7 +129,7 @@ class Swiper {
     
     // Install transition end listener.
     container.onTransitionEnd.listen((_) {
-      _log.finer('Transition ended (with animation): currentIndex=$currentIndex');
+      _log.fine('Transition ended (with animation): currentIndex=$currentIndex');
       if (_onTransitionEnd != null) {
         _onTransitionEnd.add(currentIndex);
       }
@@ -173,7 +173,7 @@ class Swiper {
    * If [noPageChangeEvent] is set to true, no page change event is fired.
    */
   void moveToIndex(int index, {int speed, bool noPageChangeEvent: false}) {
-    _log.finer('Moving to index: index=$index, speed=$speed');
+    _log.fine('Moving to index: index=$index, speed=$speed');
     
     int oldIndex = _currentIndex;
      
@@ -188,7 +188,7 @@ class Swiper {
     if (oldIndex != _currentIndex) {
       // Fire page change event.
       if (!noPageChangeEvent) {
-        _log.finer('Page change event: currentIndex=$_currentIndex');
+        _log.fine('Page change event: currentIndex=$_currentIndex');
         if (_onPageChange != null) {
           _onPageChange.add(_currentIndex);
         }
@@ -380,7 +380,7 @@ class Swiper {
     
     // Manually fire transition event if speed is 0 as transitionEnd event won't fire.
     if (forceTransitionEndEvent && speed <= 0) {
-      _log.finer('Transition ended (no animation): currentIndex=$currentIndex');
+      _log.fine('Transition ended (no animation): currentIndex=$currentIndex');
       if (_onTransitionEnd != null) {
         _onTransitionEnd.add(currentIndex);
       }
