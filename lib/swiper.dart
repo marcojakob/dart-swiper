@@ -14,15 +14,6 @@ class Swiper {
   /// How many pixels until a swipe is detected.
   static const int DISTANCE_THRESHOLD = 20;
   
-  /// The container for all swipe pages. 
-  Element container;
-  
-  // --------------
-  // Options
-  // --------------
-  /// Speed of prev and next transitions in milliseconds. 
-  int speed = 300;
-  
   // -------------------
   // Events
   // -------------------
@@ -61,7 +52,16 @@ class Swiper {
   // -------------------
   // Private Properties
   // -------------------
-  /// The [DragDetector] used to track drags on the [container].
+  /// The main swiper container.
+  Element _swiperElement;
+  
+  /// The container for all swipe pages. 
+  Element _containerElement;
+  
+  /// Speed of prev and next transitions in milliseconds. 
+  int _speed = 300; 
+  
+  /// The [DragDetector] used to track drags on the [_containerElement].
   DragDetector _dragDetector;
   
   /// Width of one slide.
@@ -73,7 +73,7 @@ class Swiper {
   /// The x-position of the current page.
   int _currentPageX;
   
-  /// The current transform translate CSS property on [container].
+  /// The current transform translate CSS property on [_containerElement].
   int _currentTranslateX;
   
   /// Tracks listener subscriptions.
@@ -85,21 +85,29 @@ class Swiper {
    * The [swiperElement] must contain a child element that is the **container**
    * of all swipe pages.
    * 
-   * You can provide an optional [startIndex] for the initial index that should
-   * be displayed.
+   * ## Options
    * 
-   * When [disableTouch] is set to true, swiping with touch will be ignored.
-   * When [disableMouse] is set to true, swiping with mouse will be ignored.
+   * * [startIndex] is the index position the Swiper should start at. 
+   *   (default: 0)
+   * * [speed] is the speed of prev and next transitions in milliseconds. 
+   *   (default: 300)
+   * * [disableTouch] defines if swiping with touch should be ignored. 
+   *   (default: false)
+   * * [disableMouse] defines if swiping with mouse should be ignored. 
+   *   (default: false)
    */
-  Swiper(Element swiperElement, {startIndex: 0, disableTouch: false, 
-                                 disableMouse: false}) {
+  Swiper(Element swiperElement, {startIndex: 0, speed: 300, 
+        disableTouch: false, disableMouse: false}) {
+      
     _log.fine('Initializing Swiper');
     
-    // Get the pages container.
-    container = swiperElement.children[0];
+    _swiperElement = swiperElement;
+    _containerElement = swiperElement.children[0];
+    _setCurrentIndex(startIndex);
+    _speed = speed;
     
     // Set default transition style.
-    container.style
+    _containerElement.style
         ..transitionProperty = 'transform'
         ..transitionTimingFunction = 'ease-out';
     
@@ -107,16 +115,13 @@ class Swiper {
     _stackPages();
     
     // Init size.
-    _pageWidth = _calcPageWidth();
-    
-    // Go to initial page.
-    moveToIndex(startIndex, speed: 0);
+    resize();
     
     // We're ready, set to visible.
     swiperElement.style.visibility = 'visible';
 
-    // Set up the DragDetector on the [container].
-    _dragDetector = new DragDetector.forElement(container, 
+    // Set up the DragDetector on the swiper.
+    _dragDetector = new DragDetector.forElement(_swiperElement, 
         disableTouch: disableTouch, disableMouse: disableMouse);
     
     // Swiping is only done horizontally.
@@ -127,8 +132,8 @@ class Swiper {
     _subs.add(_dragDetector.onDragEnd.listen(_handleDragEnd));
     
     
-    // Install transition end listener.
-    container.onTransitionEnd.listen((_) {
+    // Install transitionEnd listener.
+    _containerElement.onTransitionEnd.listen((_) {
       _log.fine('Transition ended (with animation): currentIndex=$currentIndex');
       if (_onTransitionEnd != null) {
         _onTransitionEnd.add(currentIndex);
@@ -137,20 +142,16 @@ class Swiper {
     
     // Install window resize listener (but only after visibility has been set).
     new Future(() => 
-        window.onResize.listen((e) {
-          refreshSize();
-        }
-      )
-    );
+        window.onResize.listen((e) => resize()));
   }
   
   /**
-   * Stacks the pages of [container] horizontally with the `left` css attribute.
+   * Stacks the pages of [_containerElement] horizontally with the `left` css attribute.
    */
   void _stackPages() {
     // Position pages with left attribute of 100%, 200%, 300%, etc.
-    for (int i = 0; i < container.children.length; i++) {
-      container.children[i].style.left = '${i}00%';      
+    for (int i = 0; i < _containerElement.children.length; i++) {
+      _containerElement.children[i].style.left = '${i}00%';      
     }
   }
 
@@ -162,7 +163,7 @@ class Swiper {
   /**
    * The current page.
    */
-  Element get currentPage => container.children[currentIndex];
+  Element get currentPage => _containerElement.children[currentIndex];
    
   /**
    * Moves to the page at [index]. 
@@ -173,19 +174,16 @@ class Swiper {
    * If [noPageChangeEvent] is set to true, no page change event is fired.
    */
   void moveToIndex(int index, {int speed, bool noPageChangeEvent: false}) {
-    _log.fine('Moving to index: index=$index, speed=$speed');
-    
     int oldIndex = _currentIndex;
-     
-    if (index < 0) {
-      _currentIndex = 0;
-    } else if (index > container.children.length - 1) {
-      _currentIndex = container.children.length - 1;
-    } else {
-      _currentIndex = index;
-    }
+    _setCurrentIndex(index);
     
     if (oldIndex != _currentIndex) {
+      // The index changed.
+      _log.fine('Moving to new index: index=$index');
+      
+      // Update currentPageX because index changed. 
+      _updateCurrentPageX();
+      
       // Fire page change event.
       if (!noPageChangeEvent) {
         _log.fine('Page change event: currentIndex=$_currentIndex');
@@ -193,16 +191,16 @@ class Swiper {
           _onPageChange.add(_currentIndex);
         }
       }
-      
-      // The index changed, update current page x. 
-      _updateCurrentPageX();
      
       // Set new translate and make sure the transitionEnd event is fired.
       _setTranslateX(_currentPageX, speed: speed, forceTransitionEndEvent: true);
       
     } else {
       // No change in index. Move back to current page.
-      _setTranslateX(_currentPageX, speed: speed);
+      _log.fine('Moving back to old index: index=$index');
+      
+      // Set new translate and make sure the transitionEnd event is fired.
+      _setTranslateX(_currentPageX, speed: speed, forceTransitionEndEvent: true);
     }
   }
    
@@ -228,7 +226,7 @@ class Swiper {
    * Returns true if there is a next page.
    */
   bool hasNext() {
-    return currentIndex < container.children.length - 1;
+    return currentIndex < _containerElement.children.length - 1;
   }
    
   /**
@@ -239,16 +237,16 @@ class Swiper {
   }
 
   /**
-   * Updates and refreshes the size.
+   * Updates the page size.
    */
-  void refreshSize() {
-    _pageWidth = _calcPageWidth();
+  void resize() {
+    _updatePageWidth();
     _updateCurrentPageX();
     _setTranslateX(_currentPageX, speed: 0);
   }
   
   /**
-   * Unistalls all listeners. This will return the [container] back to its 
+   * Unistalls all listeners. This will return the swiper container back to its 
    * pre-init state.
    */
   void destroy() {
@@ -330,12 +328,25 @@ class Swiper {
   }
   
   /**
-   * Updates the page width.
+   * Updates the pageWidth to match the new swiperElement width.
    */
-  int _calcPageWidth() {
-    // Get the page width.
-    // (Note: getBoundingClientRect() will only work in Safari from version 4).
-    return container.getBoundingClientRect().width.round();
+  void _updatePageWidth() {
+    _pageWidth = _containerElement.getBoundingClientRect().width.round();
+  }
+  
+  /**
+   * Sets the current index to [index]. Ensures the [index] is inside the 
+   * range of possible indexes.
+   */
+  void _setCurrentIndex(int index) {
+    // Ensure index is inside bounds.
+    if (index < 0) {
+      _currentIndex = 0;
+    } else if (index > _containerElement.children.length - 1) {
+      _currentIndex = _containerElement.children.length - 1;
+    } else {
+      _currentIndex = index;
+    }
   }
   
   /**
@@ -348,11 +359,11 @@ class Swiper {
   }
   
   /**
-   * Sets the transform translate CSS property on the [container] to the 
+   * Sets the transform translate CSS property on the [_containerElement] to the 
    * specified [x] value.
    * 
-   * * [x] > 0 moves the [container] to the RIGHT (shows slide on the LEFT).
-   * * [x] < 0 moves the [container] to the LEFT (shows slide on the RIGHT).
+   * * [x] > 0 moves the [_containerElement] to the RIGHT (shows slide on the LEFT).
+   * * [x] < 0 moves the [_containerElement] to the LEFT (shows slide on the RIGHT).
    * 
    * Optionally the [speed] can be set as duration of the transition animation.
    * If no [speed] is specified, the default speed is used (proportionally 
@@ -364,18 +375,18 @@ class Swiper {
    */
   void _setTranslateX(int x, {int speed, bool forceTransitionEndEvent: false}) {
     if (speed == null) {
-      speed = _adjustSpeed(this.speed, _pageWidth, (x - _currentTranslateX).abs()); 
+      speed = _adjustSpeed(this._speed, _pageWidth, (x - _currentTranslateX).abs()); 
     }
     
     _log.finest('Setting translate: x=$x, speed=$speed');
     
     _currentTranslateX = x;
     
-    container.style.transitionDuration = '${speed}ms';
+    _containerElement.style.transitionDuration = '${speed}ms';
     
     // Adding `translateZ(0)` to activate GPU hardware-acceleration in 
     // browsers that support this (a bit of a hack).
-    container.style.transform = 'translate(${x}px, 0) translateZ(0)';
+    _containerElement.style.transform = 'translate(${x}px, 0) translateZ(0)';
     
     
     // Manually fire transition event if speed is 0 as transitionEnd event won't fire.
