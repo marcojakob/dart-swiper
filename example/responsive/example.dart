@@ -6,7 +6,7 @@ import 'package:swiper/swiper.dart';
 main() {
   initLogging();
   
-  Swiper swiper = new Swiper(querySelector('.swiper'));
+  Swiper swiper = new Swiper(querySelector('.swiper'), autoHeight: true);
 }
 
 initLogging() {

@@ -1,24 +1,13 @@
-body {
-  margin: 10px 0 0 0;
-  text-align: center;
-}
-
-.header {
-  margin-bottom: 40px;
-}
-
-.footer {
-  margin-top: 40px; 
-}
-
 .swiper {
   overflow: hidden;
   position: relative;
-  height: 333px; /* Declare the height of the swiper. */
   visibility: hidden; /* Hide until layout is ready. */
-  margin: auto;
-  width: 500px;
+  cursor: url(packages/swiper/cursor/openhand.cur) 7 5, move;
   border: 2px solid;
+  width: 50%;
+  float: left;
+  margin-right: 10px;
+  max-width: 500px;
 }
 
 .page-container {
@@ -27,7 +16,14 @@ body {
 }
 
 .page-container > div {
-  text-align: center;
   position: absolute;
   width: 100%;
+  text-align: center;
+}
+
+
+/* Page Styling. */
+.page-container img {
+  max-width: 100%;
+  height: auto;
 }

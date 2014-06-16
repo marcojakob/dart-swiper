@@ -2,6 +2,7 @@ library swiper;
 
 import 'dart:html';
 import 'dart:async';
+import 'dart:math' as math;
 import 'package:logging/logging.dart';
 import 'package:dnd/drag_detector.dart';
 
@@ -48,23 +49,25 @@ class Swiper {
     return _onTransitionEnd.stream;
   }
   
-  
   // -------------------
   // Private Properties
   // -------------------
   /// The main swiper container.
-  Element _swiperElement;
+  final Element _swiperElement;
   
   /// The container for all swipe pages. 
   Element _containerElement;
   
   /// Speed of prev and next transitions in milliseconds. 
-  int _speed = 300; 
+  final int _speed; 
+  
+  /// True if height is calculated automatically from the pages content.
+  final bool _autoHeight; 
   
   /// The [DragDetector] used to track drags on the [_containerElement].
   DragDetector _dragDetector;
   
-  /// Width of one slide.
+  /// Width of one slide. 
   int _pageWidth;
   
   /// The current page index.
@@ -91,20 +94,27 @@ class Swiper {
    *   (default: 0)
    * * [speed] is the speed of prev and next transitions in milliseconds. 
    *   (default: 300)
+   * * [autoHeight] defines if the Swiper should set the container's height
+   *   depending on the pages content. This is useful in a responsive layout or
+   *   when the height of the pages is unknown (like with responsive images).
+   *   (default: false)
    * * [disableTouch] defines if swiping with touch should be ignored. 
    *   (default: false)
    * * [disableMouse] defines if swiping with mouse should be ignored. 
    *   (default: false)
    */
-  Swiper(Element swiperElement, {startIndex: 0, speed: 300, 
-        disableTouch: false, disableMouse: false}) {
+  Swiper(Element swiperElement, {int startIndex: 0, int speed: 300, 
+    bool autoHeight: false, 
+    bool disableTouch: false, bool disableMouse: false}) 
+      : this._swiperElement = swiperElement,
+        this._speed = speed,
+        this._autoHeight = autoHeight {
       
     _log.fine('Initializing Swiper');
     
-    _swiperElement = swiperElement;
-    _containerElement = swiperElement.children[0];
+    _containerElement = _swiperElement.children[0];
+    
     _setCurrentIndex(startIndex);
-    _speed = speed;
     
     // Set default transition style.
     _containerElement.style
@@ -118,7 +128,7 @@ class Swiper {
     resize();
     
     // We're ready, set to visible.
-    swiperElement.style.visibility = 'visible';
+    _swiperElement.style.visibility = 'visible';
 
     // Set up the DragDetector on the swiper.
     _dragDetector = new DragDetector.forElement(_swiperElement, 
@@ -146,7 +156,8 @@ class Swiper {
   }
   
   /**
-   * Stacks the pages of [_containerElement] horizontally with the `left` css attribute.
+   * Stacks the pages of [_containerElement] horizontally with the `left` css 
+   * attribute.
    */
   void _stackPages() {
     // Position pages with left attribute of 100%, 200%, 300%, etc.
@@ -164,7 +175,7 @@ class Swiper {
    * The current page.
    */
   Element get currentPage => _containerElement.children[currentIndex];
-   
+  
   /**
    * Moves to the page at [index]. 
    * 
@@ -237,12 +248,36 @@ class Swiper {
   }
 
   /**
-   * Updates the page size.
+   * Updates the page and container sizes.
    */
   void resize() {
-    _updatePageWidth();
+    // Get the swiper's contentWidth. The contentWidth is a ROUNDEN pixel value.
+    _pageWidth = _swiperElement.contentEdge.width.round();
+    
+    // We set the ROUNDED width to the container element. This is important, 
+    // otherwise a floating point value might get passed down to the 
+    // pages because they are 100%-width. A floating point width of the pages
+    // would cause rounding errors.
+    _containerElement.style.width = '${_pageWidth}px';
+
+    // Page width might have changed --> update the x-coordinate of current page.
     _updateCurrentPageX();
+    
+    // Adjust container translate to the new x-coordinate of current page.
     _setTranslateX(_currentPageX, speed: 0);
+    
+    if (_autoHeight) {
+      // Get max page height.
+      int maxPageHeight = _calcMaxPageHeight();
+      
+      // Calculate swiper border + padding.
+      int borderAndPadding = _swiperElement.borderEdge.height - 
+          _swiperElement.contentEdge.height;
+      
+      int swiperHeight = maxPageHeight + borderAndPadding;
+      _log.fine('Calculated new swiper height: ${swiperHeight}px');
+      _swiperElement.style.height = '${swiperHeight}px';
+    }
   }
   
   /**
@@ -328,10 +363,14 @@ class Swiper {
   }
   
   /**
-   * Updates the pageWidth to match the new swiperElement width.
+   * Returns the height of the highest page.
    */
-  void _updatePageWidth() {
-    _pageWidth = _containerElement.getBoundingClientRect().width.round();
+  int _calcMaxPageHeight() {
+    num pageMaxHeight = 0;
+    _containerElement.children.forEach((child) {
+      pageMaxHeight = math.max(pageMaxHeight, child.borderEdge.height);
+    });
+    return pageMaxHeight.toInt();
   }
   
   /**
@@ -401,7 +440,7 @@ class Swiper {
   /**
    * Helper method to adjusts the speed proportionally to the [actualDistance].
    */
-  int _adjustSpeed(int speed, int pageDistance, int actualDistance) {
+  int _adjustSpeed(int speed, num pageDistance, num actualDistance) {
     if (actualDistance > pageDistance) {
       return speed;
     }

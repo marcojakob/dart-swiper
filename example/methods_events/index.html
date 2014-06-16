@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+
+<title>Swiper Example: Method and Events</title>
+
+<link rel="stylesheet" href="packages/bootstrap_for_pub/3.1.0/css/bootstrap.css">
+<link rel="stylesheet" href="example.css">
+
+</head>
+
+<body>
+  <div class="container">
+    <h1>Swiper Example: Methods and Events</h1>
+    <p>
+      This example shows how to use Swiper <strong>methods</strong> 
+      and <strong>events</strong>. <br />Try swiping left/right or 
+      navigating with the buttons below. 
+    </p>
+    &rarr; <a href="https://github.com/marcojakob/dart-swiper">Dart Swiper Source on GitHub</a>
+    <hr>
+
+    <div class="swiper">
+      <div class="page-container">
+        <div class="page color1">
+          <p>0</p>
+        </div>
+        <div class="page color2">
+          <p>1</p>
+        </div>
+        <div class="page color3">
+          <p>2</p>
+        </div>
+        <div class="page color4">
+          <p>3</p>
+        </div>
+        <div class="page color5">
+          <p>4</p>
+        </div>
+      </div>
+    </div>
+    
+    <h2>Methods</h2>
+    <p>
+      <button id="previous-button" class="btn btn-default">&larr; Previous</button>
+      <button id="next-button" class="btn btn-default">Next &rarr;</button>
+    </p>
+    <form class="form-inline">
+      <button id="move-button" class="btn btn-default" type="button">MoveToIndex</button>
+      <input id="move-input" class="form-control" type="number" value="2" />
+    </form>
+    
+    <h2>Events</h2>
+    <textarea readonly id="events" class="form-control" rows="10" cols="60"></textarea>
+  </div>
+  
+  
+  <script type="application/dart" src="example.dart"></script>
+  <script src="packages/browser/dart.js"></script>
+</body>
+</html>
