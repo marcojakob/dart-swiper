@@ -5,7 +5,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
 
-<title>Swiper Example: Images Contained</title>
+<title>Dart Swiper: Simple Example</title>
 
 <link rel="stylesheet" href="packages/bootstrap_for_pub/3.1.0/css/bootstrap.css">
 <link rel="stylesheet" href="example.css">
@@ -14,14 +14,47 @@
 
 <body>
   <div class="container">
-    <h1>Swiper: Simple Example with Images</h1>
+    <div class="page-header">
+      <h1>Dart Swiper <small>Simple Example</small></h1>
+    </div>
+    
     <p>
-      This example shows how to use Swiper with images in a contained area. Try
-      swiping with touch or mouse.
+      This example shows basic use of the Dart Swiper. 
     </p>
-    &rarr; <a href="https://github.com/marcojakob/dart-swiper">Dart Swiper Source on GitHub</a>
-    <hr>
+    <p>
+    <span class="glyphicon glyphicon-list-alt"></span> 
+    <a href="https://github.com/marcojakob/dart-swiper/tree/master/example/simple">
+    Example Source on GitHub</a>
+    </p>
+    
+    <h3>Description</h3>
+    <ul class="list-group">
+      <li class="list-group-item">
+        <strong>Touch and Mouse.</strong> Swipe with either touch or mouse.
+      </li>
+      <li class="list-group-item list-group-item-info">
+        <strong>Non-Responsive.</strong> Predefined width and height of Swiper element.
+      </li>
+      <li class="list-group-item">
+        <strong>Cursor.</strong> Changes cursor during drag.
+      </li>
+      <li class="list-group-item">
+        <strong>Cancel.</strong> Esc-key or window loosing focus cancels the drag.
+      </li>
+      <li class="list-group-item">
+        <strong>Transition.</strong> Default transition speed is 300ms (is auto-adjusted to the remaining transition distance).
+      </li>
+      <li class="list-group-item">
+        <strong>Scroll Prevention.</strong> Detects if the user swipes horizontally or scrolls vertically.
+      </li>
+      <li class="list-group-item">
+        <strong>Resistant Bounds.</strong> Increases resistance on left and right bounds to indicate that user reached the end.
+      </li>
+    </ul>
+      
+    <h3>Demo</h3>
 
+    <!-- Swiper code. -->
     <div class="swiper">
       <div class="page-container">
         <div class="page color1">

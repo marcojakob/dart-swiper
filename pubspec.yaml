@@ -9,5 +9,4 @@ dependencies:
   dnd:
     path: ../dart-dnd
 dev_dependencies:
-  intl: any
   bootstrap_for_pub: any

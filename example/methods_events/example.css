@@ -1,9 +1,8 @@
 .swiper {
   overflow: hidden;
   position: relative;
-  height: 333px; /* Declare the height of the swiper. */
+  height: 200px; /* Declare the height of the swiper. */
   visibility: hidden; /* Hide until layout is ready. */
-  width: 500px;
   border: 2px solid;
   cursor: url(packages/swiper/cursor/openhand.cur) 7 5, move;
 }
