@@ -2,12 +2,12 @@
   overflow: hidden;
   position: relative;
   visibility: hidden; /* Hide until layout is ready. */
-  cursor: url(packages/swiper/cursor/openhand.cur) 7 5, move;
   border: 2px solid;
   width: 50%;
   float: left;
   margin-right: 10px;
   max-width: 500px;
+  cursor: url(packages/swiper/cursor/openhand.cur) 7 5, move;
 }
 
 .page-container {
@@ -19,6 +19,12 @@
   position: absolute;
   width: 100%;
   text-align: center;
+}
+
+
+/* Show other curser during drag. */
+.swiper-dragging, .swiper-drag-occurring {
+  cursor: url(packages/swiper/cursor/closedhand.cur) 7 5, move;
 }
 
 

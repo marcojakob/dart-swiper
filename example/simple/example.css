@@ -19,6 +19,13 @@
   height: 100%;
 }
 
+
+/* Show other curser during drag. */
+.swiper-dragging, .swiper-drag-occurring {
+  cursor: url(packages/swiper/cursor/closedhand.cur) 7 5, move;
+}
+
+
 /* Page Styling. */
 .page {
   color: white;

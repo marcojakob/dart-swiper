@@ -16,6 +16,17 @@ class Swiper {
   static const int DISTANCE_THRESHOLD = 20;
   
   // -------------------
+  // Options
+  // -------------------
+  /// CSS class set to the swiper element while a user is dragging. Default 
+  /// class is 'swiper-dragging'. If null, no css class is added.
+  String draggingClass = 'swiper-dragging';
+  
+  /// CSS class set to the html body tag during a drag. Default is 
+  /// 'swiper-drag-occurring'. If null, no CSS class is added.
+  String dragOccurringClass = 'swiper-drag-occurring';
+  
+  // -------------------
   // Events
   // -------------------
   StreamController<int> _onPageChange;
@@ -48,6 +59,27 @@ class Swiper {
     }
     return _onTransitionEnd.stream;
   }
+  
+  /**
+   * Fired when the user starts dragging. 
+   * 
+   * Note: The [onDragStart] is fired not on touchStart or mouseDown but as 
+   * soon as there is a drag movement. When a drag is started an [onDrag] event 
+   * will also be fired.
+   */
+  Stream<DragEvent> get onDragStart => _dragDetector.onDragStart;
+  
+  /**
+   * Fired periodically throughout the drag operation. 
+   */
+  Stream<DragEvent> get onDrag => _dragDetector.onDrag;
+  
+  /**
+   * Fired when the user ends the dragging. 
+   * Is also fired when the user clicks the 'esc'-key or the window loses focus. 
+   * For those two cases, the mouse positions of [DragEvent] will be null.
+   */
+  Stream<DragEvent> get onDragEnd => _dragDetector.onDragEnd;
   
   // -------------------
   // Private Properties
@@ -121,7 +153,7 @@ class Swiper {
         ..transitionProperty = 'transform'
         ..transitionTimingFunction = 'ease-out';
     
-    // Horizontally stack pages.
+    // Horizontally stack pages inside the container.
     _stackPages();
     
     // Init size.
@@ -138,6 +170,7 @@ class Swiper {
     _dragDetector.horizontalOnly = true;
     
     // Listen for drag events.
+    _subs.add(_dragDetector.onDragStart.listen(_handleDragStart));
     _subs.add(_dragDetector.onDrag.listen(_handleDrag));
     _subs.add(_dragDetector.onDragEnd.listen(_handleDragEnd));
     
@@ -292,6 +325,19 @@ class Swiper {
   }
   
   /**
+   * Handles drag start.
+   */
+  void _handleDragStart(DragEvent dragEvent) {
+    // Add the css classes during the drag operation.
+    if (draggingClass != null) {
+      _swiperElement.classes.add(draggingClass);
+    }
+    if (dragOccurringClass != null) {
+      document.body.classes.add(dragOccurringClass);
+    }
+  }
+  
+  /**
    * Handles drag.
    */
   void _handleDrag(DragEvent dragEvent) {
@@ -310,23 +356,38 @@ class Swiper {
    * Handles drag end.
    */
   void _handleDragEnd(DragEvent dragEvent) {
-    int deltaX = _calcDelta(dragEvent.startCoords.x, dragEvent.coords.x);
-    
-    _log.finest('DragEnd: deltaX=$deltaX');
+    // Remove the css classes.
+    if (draggingClass != null) {
+      _swiperElement.classes.remove(draggingClass);
+    }
+    if (dragOccurringClass != null) {
+      document.body.classes.remove(dragOccurringClass);
+    }
     
     int index = _currentIndex;
     
-    // Determine if we are past the threshold.
-    if (deltaX.abs() > DISTANCE_THRESHOLD) {
-      // Determine direction of swipe.
-      bool directionRight = deltaX > 0;
+    if (dragEvent.cancelled) {
+      // User cancelled the event --> go back to previous index.
+      _log.finest('DragEnd: User cancelled the drag');
       
-      if (directionRight && hasNext()) {
-        index++;
-      } else if (!directionRight && hasPrev()){
-        index--;
-      }
-    }      
+    } else {
+      // User did not cancel --> find new index.
+      int deltaX = _calcDelta(dragEvent.startCoords.x, dragEvent.coords.x);
+      
+      _log.finest('DragEnd: deltaX=$deltaX');
+      
+      // Determine if we are past the threshold.
+      if (deltaX.abs() > DISTANCE_THRESHOLD) {
+        // Determine direction of swipe.
+        bool directionRight = deltaX > 0;
+        
+        if (directionRight && hasNext()) {
+          index++;
+        } else if (!directionRight && hasPrev()){
+          index--;
+        }
+      }      
+    }
     
     // Move to index (might be the same as the current index).
     moveToIndex(index);
