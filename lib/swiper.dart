@@ -12,12 +12,13 @@ final _log = new Logger('swiper');
  * A touch and mouse slider for swiping through images and html.
  */
 class Swiper {
-  /// How many pixels until a swipe is detected.
-  static const int DISTANCE_THRESHOLD = 20;
   
   // -------------------
   // Options
   // -------------------
+  /// How many pixels until a swipe is detected.
+  int distanceThreshold = 20;
+  
   /// CSS class set to the swiper element while a user is dragging. Default 
   /// class is 'swiper-dragging'. If null, no css class is added.
   String draggingClass = 'swiper-dragging';
@@ -25,6 +26,7 @@ class Swiper {
   /// CSS class set to the html body tag during a drag. Default is 
   /// 'swiper-drag-occurring'. If null, no CSS class is added.
   String dragOccurringClass = 'swiper-drag-occurring';
+  
   
   // -------------------
   // Events
@@ -80,6 +82,7 @@ class Swiper {
    * For those two cases, the mouse positions of [DragEvent] will be null.
    */
   Stream<DragEvent> get onDragEnd => _dragDetector.onDragEnd;
+  
   
   // -------------------
   // Private Properties
@@ -377,7 +380,7 @@ class Swiper {
       _log.finest('DragEnd: deltaX=$deltaX');
       
       // Determine if we are past the threshold.
-      if (deltaX.abs() > DISTANCE_THRESHOLD) {
+      if (deltaX.abs() > distanceThreshold) {
         // Determine direction of swipe.
         bool directionRight = deltaX > 0;
         
