@@ -23,13 +23,13 @@ class Swiper {
   /// detected (regardless of swipe distance).
   int durationThreshold = 250;
   
-  /// CSS class set to the swiper element while a user is dragging. Default 
+  /// CSS class set to the [swiperElement] while a user is dragging. Default 
   /// class is 'swiper-dragging'. If null, no css class is added.
-  String draggingClass = 'swiper-dragging';
+  String draggingClassSwiper = 'swiper-dragging';
   
   /// CSS class set to the html body tag during a drag. Default is 
-  /// 'swiper-drag-occurring'. If null, no CSS class is added.
-  String dragOccurringClass = 'swiper-drag-occurring';
+  /// 'swiper-dragging'. If null, no CSS class is added.
+  String draggingClassBody = 'swiper-dragging';
   
   
   // -------------------
@@ -82,6 +82,7 @@ class Swiper {
   
   /**
    * Fired when the user ends the dragging. 
+   * 
    * Is also fired when the user clicks the 'esc'-key or the window loses focus. 
    * For those two cases, the mouse positions of [DragEvent] will be null.
    */
@@ -137,7 +138,7 @@ class Swiper {
    * * [speed] is the speed of prev and next transitions in milliseconds. 
    *   (default: 300)
    * * [autoHeightRatio] defines if and how the Swiper should calculate the 
-   *   height. If defined, the height is calculated from width with 
+   *   height. If defined, the height is calculated from the swiper width with 
    *   [autoHeightRatio] and automatically applied when the browser is resized.
    *   This is useful, e.g. for responsive images.
    * * [disableTouch] defines if swiping with touch should be ignored. 
@@ -180,11 +181,11 @@ class Swiper {
     _subs.add(_dragDetector.onDragEnd.listen(_handleDragEnd));
     
     // Install transitionEnd listener.
-    _containerElement.onTransitionEnd.listen((_) {
+    _subs.add(_containerElement.onTransitionEnd.listen((_) {
       if (_fireNextPageTransitionEnd) {
         _firePageTransitionEndEvent();
       }
-    });
+    }));
     
     // Install browser resize listener. This is done asynchronously after the 
     // visibility has been applied, because setting visibility would somethimes
@@ -373,7 +374,7 @@ class Swiper {
   }
   
   /**
-   * Unistalls all listeners. This will return the swiper container back to its 
+   * Unistalls all listeners. This will return the swiper element back to its 
    * pre-init state.
    */
   void destroy() {
@@ -388,11 +389,11 @@ class Swiper {
    */
   void _handleDragStart(DragEvent dragEvent) {
     // Add the css classes during the drag operation.
-    if (draggingClass != null) {
-      _swiperElement.classes.add(draggingClass);
+    if (draggingClassSwiper != null) {
+      _swiperElement.classes.add(draggingClassSwiper);
     }
-    if (dragOccurringClass != null) {
-      document.body.classes.add(dragOccurringClass);
+    if (draggingClassBody != null) {
+      document.body.classes.add(draggingClassBody);
     }
     
     // Start the stopwatch.
@@ -422,11 +423,11 @@ class Swiper {
    */
   void _handleDragEnd(DragEvent dragEvent) {
     // Remove the css classes.
-    if (draggingClass != null) {
-      _swiperElement.classes.remove(draggingClass);
+    if (draggingClassSwiper != null) {
+      _swiperElement.classes.remove(draggingClassSwiper);
     }
-    if (dragOccurringClass != null) {
-      document.body.classes.remove(dragOccurringClass);
+    if (draggingClassBody != null) {
+      document.body.classes.remove(draggingClassBody);
     }
     
     // Stop the stopwatch.

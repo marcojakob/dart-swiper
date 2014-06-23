@@ -24,7 +24,7 @@
 
 
 /* Show other curser during drag. */
-.swiper-dragging, .swiper-drag-occurring {
+.swiper-dragging {
   cursor: url(packages/swiper/cursor/closedhand.cur), move; /* Cursor for IE. */
   cursor: url(packages/swiper/cursor/closedhand.cur) 7 5, move; /* Cursor for FF and Chrome (setting midpoint). */
 }
