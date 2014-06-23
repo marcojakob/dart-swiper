@@ -2,7 +2,6 @@ library swiper;
 
 import 'dart:html';
 import 'dart:async';
-import 'dart:math' as math;
 import 'package:logging/logging.dart';
 import 'package:dnd/drag_detector.dart';
 
@@ -32,7 +31,7 @@ class Swiper {
   // Events
   // -------------------
   StreamController<int> _onPageChange;
-  StreamController<int> _onTransitionEnd;
+  StreamController<int> _onPageTransitionEnd;
   
   /**
    * Fired when the current page changed.
@@ -48,18 +47,18 @@ class Swiper {
   }
   
   /**
-   * Fired when the transition ends. When the user swipes again before the 
-   * previous transition ended, this event is only fired once, at the end of all 
-   * transitions.
+   * Fired when the transition ends after a page change. When the user swipes 
+   * again before the previous transition ended, this event is only fired once, 
+   * at the end of all page transitions.
    * 
    * The data is the page index. To get the page, use [currentPage].
    */
-  Stream<int> get onTransitionEnd {
-    if (_onTransitionEnd == null) {
-      _onTransitionEnd = new StreamController<int>.broadcast(
-          onCancel: () => _onTransitionEnd = null);
+  Stream<int> get onPageTransitionEnd {
+    if (_onPageTransitionEnd == null) {
+      _onPageTransitionEnd = new StreamController<int>.broadcast(
+          onCancel: () => _onPageTransitionEnd = null);
     }
-    return _onTransitionEnd.stream;
+    return _onPageTransitionEnd.stream;
   }
   
   /**
@@ -87,17 +86,17 @@ class Swiper {
   // -------------------
   // Private Properties
   // -------------------
-  /// The main swiper container.
+  /// The main swiper element.
   final Element _swiperElement;
   
-  /// The container for all swipe pages. 
+  /// The container for all swipe pages (child of [_swiperElement]). 
   Element _containerElement;
   
   /// Speed of prev and next transitions in milliseconds. 
-  final int _speed; 
+  final int _speed;
   
-  /// True if height is calculated automatically from the pages content.
-  final bool _autoHeight; 
+  /// The aspect ratio of the Swiper if it should be automatically applied.
+  final double _autoHeightRatio;
   
   /// The [DragDetector] used to track drags on the [_containerElement].
   DragDetector _dragDetector;
@@ -108,11 +107,10 @@ class Swiper {
   /// The current page index.
   int _currentIndex;
   
-  /// The x-position of the current page.
-  int _currentPageX;
-  
-  /// The current transform translate CSS property on [_containerElement].
-  int _currentTranslateX;
+  /// If true, the next transitionEnd event will be fired, if false, the 
+  /// transitionEnd events will be ignored. Without this flag the transitionEnd
+  /// would also fire when there was an animation with no index change. 
+  bool _fireNextPageTransitionEnd = false;
   
   /// Tracks listener subscriptions.
   List<StreamSubscription> _subs = [];
@@ -129,37 +127,32 @@ class Swiper {
    *   (default: 0)
    * * [speed] is the speed of prev and next transitions in milliseconds. 
    *   (default: 300)
-   * * [autoHeight] defines if the Swiper should set the container's height
-   *   depending on the pages content. This is useful in a responsive layout or
-   *   when the height of the pages is unknown (like with responsive images).
-   *   (default: false)
+   * * [autoHeightRatio] defines if and how the Swiper should calculate the 
+   *   height. If defined, the height is calculated from width with 
+   *   [autoHeightRatio] and automatically applied when the browser is resized.
+   *   This is useful, e.g. for responsive images.
    * * [disableTouch] defines if swiping with touch should be ignored. 
    *   (default: false)
    * * [disableMouse] defines if swiping with mouse should be ignored. 
    *   (default: false)
    */
   Swiper(Element swiperElement, {int startIndex: 0, int speed: 300, 
-    bool autoHeight: false, 
-    bool disableTouch: false, bool disableMouse: false}) 
+    double autoHeightRatio: null, bool disableTouch: false, bool disableMouse: false}) 
       : this._swiperElement = swiperElement,
-        this._speed = speed,
-        this._autoHeight = autoHeight {
+        this._speed = speed, this._autoHeightRatio = autoHeightRatio {
       
     _log.fine('Initializing Swiper');
     
+    // Get the page-container.
     _containerElement = _swiperElement.children[0];
     
-    _setCurrentIndex(startIndex);
-    
-    // Set default transition style.
-    _containerElement.style
-        ..transitionProperty = 'transform'
-        ..transitionTimingFunction = 'ease-out';
+    // Validate and set the start index.
+    _currentIndex = _getNextValidIndex(startIndex);
     
     // Horizontally stack pages inside the container.
-    _stackPages();
+    _initPages(_currentIndex);
     
-    // Init size.
+    // Resize for the first time.
     resize();
     
     // We're ready, set to visible.
@@ -177,29 +170,45 @@ class Swiper {
     _subs.add(_dragDetector.onDrag.listen(_handleDrag));
     _subs.add(_dragDetector.onDragEnd.listen(_handleDragEnd));
     
-    
     // Install transitionEnd listener.
     _containerElement.onTransitionEnd.listen((_) {
-      _log.fine('Transition ended (with animation): currentIndex=$currentIndex');
-      if (_onTransitionEnd != null) {
-        _onTransitionEnd.add(currentIndex);
+      if (_fireNextPageTransitionEnd) {
+        _firePageTransitionEndEvent();
       }
     });
     
-    // Install window resize listener (but only after visibility has been set).
-    new Future(() => 
-        window.onResize.listen((e) => resize()));
+    // Install browser resize listener. This is done asynchronously after the 
+    // visibility has been applied, because setting visibility would somethimes
+    // trigger a resize event.
+    new Future(() {
+      _subs.add(window.onResize.listen((_) => resize()));
+    });
   }
   
   /**
-   * Stacks the pages of [_containerElement] horizontally with the `left` css 
-   * attribute.
+   * Initializes the pages and shows the page at [startIndex].
    */
-  void _stackPages() {
-    // Position pages with left attribute of 100%, 200%, 300%, etc.
+  void _initPages(int startIndex) {
+    // Stack the pages horizontally with the `left` css attribute of 100%, 200%, 
+    // 300%, etc.
     for (int i = 0; i < _containerElement.children.length; i++) {
       _containerElement.children[i].style.left = '${i}00%';      
     }
+    
+    // Move to the start index.
+    _translatePercentX(-startIndex * 100);
+  }
+  
+  /**
+   * Fires an [onPageTransitionEnd] event. 
+   */
+  void _firePageTransitionEndEvent() {
+    // Fire the page transition end event.
+    _log.fine('Transition end event: index=$_currentIndex');
+    if (_onPageTransitionEnd != null) {
+      _onPageTransitionEnd.add(_currentIndex);
+    }
+    _fireNextPageTransitionEnd = false;
   }
 
   /**
@@ -213,42 +222,90 @@ class Swiper {
   Element get currentPage => _containerElement.children[currentIndex];
   
   /**
+   * The main swiper element.
+   */
+  Element get swiperElement => _swiperElement;
+  
+  /**
+   * The container for all swipe pages (child of [swiperElement]). 
+   */
+  Element get containerElement => _containerElement;
+  
+  /**
    * Moves to the page at [index]. 
    * 
    * The [speed] is the duration of the transition in milliseconds. 
    * If no [speed] is provided, the speed attribute of this [Swiper] is used.
    * 
-   * If [noPageChangeEvent] is set to true, no page change event is fired.
+   * If [noEvents] is set to true, no [onPageChange] and [onPageTransitionEnd] 
+   * events are fired.
    */
-  void moveToIndex(int index, {int speed, bool noPageChangeEvent: false}) {
-    int oldIndex = _currentIndex;
-    _setCurrentIndex(index);
+  void moveToIndex(int index, {int speed, bool noEvents: false}) {
+    // Validate index.
+    index = _getNextValidIndex(index);
     
-    if (oldIndex != _currentIndex) {
-      // The index changed.
-      _log.fine('Moving to new index: index=$index');
-      
-      // Update currentPageX because index changed. 
-      _updateCurrentPageX();
-      
-      // Fire page change event.
-      if (!noPageChangeEvent) {
-        _log.fine('Page change event: currentIndex=$_currentIndex');
-        if (_onPageChange != null) {
-          _onPageChange.add(_currentIndex);
-        }
-      }
-     
-      // Set new translate and make sure the transitionEnd event is fired.
-      _setTranslateX(_currentPageX, speed: speed, forceTransitionEndEvent: true);
-      
-    } else {
-      // No change in index. Move back to current page.
-      _log.fine('Moving back to old index: index=$index');
-      
-      // Set new translate and make sure the transitionEnd event is fired.
-      _setTranslateX(_currentPageX, speed: speed, forceTransitionEndEvent: true);
+    // Use default speed if none was provided.
+    if (speed == null) {
+      speed = _speed;
     }
+    
+    _log.fine('Moving to index: index=$index, speed=$speed');
+
+    // Do the move with or without animation.
+    if (speed > 0) {
+      _moveToIndexAnim(index, speed);
+    } else {
+      _moveToIndexNoAnim(index);
+    }
+    
+    // Fire events if there was a move to a new index.
+    if (index != _currentIndex && !noEvents) {
+      // Fire page change event.
+      _log.fine('Page change event: index=$index');
+      if (_onPageChange != null) {
+        _onPageChange.add(index);
+      }
+      
+      // Ensure that the page transition end event is fired.
+      if (speed > 0) {
+        // At the end of the animation there will be a transitionEnd event.
+        // Set the flag that the next transitionEnd event triggers a new 
+        // pageTransitionEnd event.
+        _fireNextPageTransitionEnd = true;
+        
+      } else {
+        // As there was no animation, no transitionEndEvent will be fired by the 
+        // browser. So we need to manually call the fire method here.
+        _firePageTransitionEndEvent();
+      }
+    }
+    
+    // Set the new current index.
+    _currentIndex = index;
+  }
+  
+  /**
+   * Moves to [index] with an animation. 
+   * 
+   * [speed] defines the duration of the animation. [speed] must be > 0.
+   */
+  void _moveToIndexAnim(int index, int speed) {
+    _addCssTransition(speed);
+    _translatePercentX(index * -100);
+  }
+  
+  /**
+   * Moves to [index] with no animation.
+   */
+  void _moveToIndexNoAnim(int index) {
+    _translatePercentX(index * -100);
+  }
+  
+  /**
+   * Moves the current page to the specified [offset].
+   */
+  void _moveToOffset(int offset) {
+    _translatePixelX(_currentIndex * -_pageWidth + offset);
   }
    
   /**
@@ -284,7 +341,11 @@ class Swiper {
   }
 
   /**
-   * Updates the page and container sizes.
+   * Updates the cached page width and the container sizes. 
+   * 
+   * The [resize] method is automatically called when the browser is resized. 
+   * But if the [Swiper] is resized other than trough browser resizing, [resize] 
+   * must be called manually.
    */
   void resize() {
     // Get the swiper's contentWidth. The contentWidth is a ROUNDEN pixel value.
@@ -295,25 +356,11 @@ class Swiper {
     // pages because they are 100%-width. A floating point width of the pages
     // would cause rounding errors.
     _containerElement.style.width = '${_pageWidth}px';
-
-    // Page width might have changed --> update the x-coordinate of current page.
-    _updateCurrentPageX();
     
-    // Adjust container translate to the new x-coordinate of current page.
-    _setTranslateX(_currentPageX, speed: 0);
-    
-    if (_autoHeight) {
-      // Get max page height.
-      int maxPageHeight = _calcMaxPageHeight();
-      
-      // Calculate swiper border + padding.
-      int borderAndPadding = _swiperElement.borderEdge.height - 
-          _swiperElement.contentEdge.height;
-      
-      int swiperHeight = maxPageHeight + borderAndPadding;
-      _log.fine('Calculated new swiper height: ${swiperHeight}px');
-      _swiperElement.style.height = '${swiperHeight}px';
+    if (_autoHeightRatio != null) {
+      _containerElement.style.height = '${(_pageWidth * _autoHeightRatio).round()}px';
     }
+    
   }
   
   /**
@@ -338,13 +385,16 @@ class Swiper {
     if (dragOccurringClass != null) {
       document.body.classes.add(dragOccurringClass);
     }
+    
+    // Ensure there is no transition animation style during the drag operation.
+    _removeCssTransition();
   }
   
   /**
    * Handles drag.
    */
   void _handleDrag(DragEvent dragEvent) {
-    int deltaX = _calcDelta(dragEvent.startCoords.x, dragEvent.coords.x);
+    int deltaX = _calcDragDelta(dragEvent.startCoords.x, dragEvent.coords.x);
     
     _log.finest('Drag: deltaX=$deltaX');
 
@@ -352,7 +402,7 @@ class Swiper {
     deltaX = _addResistance(deltaX);
     
     // Translate to new x-position.
-    _setTranslateX(_currentPageX - deltaX, speed: 0);
+    _moveToOffset(deltaX);
   }
   
   /**
@@ -368,148 +418,129 @@ class Swiper {
     }
     
     int index = _currentIndex;
-    
-    if (dragEvent.cancelled) {
-      // User cancelled the event --> go back to previous index.
-      _log.finest('DragEnd: User cancelled the drag');
-      
-    } else {
-      // User did not cancel --> find new index.
-      int deltaX = _calcDelta(dragEvent.startCoords.x, dragEvent.coords.x);
-      
-      _log.finest('DragEnd: deltaX=$deltaX');
+    int dragDelta = _calcDragDelta(dragEvent.startCoords.x, dragEvent.coords.x);
+        
+    // Determine if the drag leads to a new index.
+    if (!dragEvent.cancelled) {
+      _log.finest('DragEnd: dragDelta=$dragDelta');
       
       // Determine if we are past the threshold.
-      if (deltaX.abs() > distanceThreshold) {
-        // Determine direction of swipe.
-        bool directionRight = deltaX > 0;
+      if (dragDelta.abs() > distanceThreshold) {
+        // Direction of swipe. Dragging left means revealing page on the right!
+        bool dragLeft = dragDelta < 0;
         
-        if (directionRight && hasNext()) {
+        if (dragLeft && hasNext()) {
           index++;
-        } else if (!directionRight && hasPrev()){
+        } else if (!dragLeft && hasPrev()){
           index--;
         }
       }      
     }
     
+    // Adjust the speed to the distance left for the move animation.
+    int animDistance;
+    if (index !=  _currentIndex) {
+      // New index: Calc distance left.
+      animDistance = (_pageWidth - dragDelta.abs()).abs();
+    } else {
+      // Back to old index: Just reverse drag distance.
+      animDistance = dragDelta.abs();
+    }
+    int adjustedSpeed = _adjustSpeed(_speed, animDistance);
+    
     // Move to index (might be the same as the current index).
-    moveToIndex(index);
+    moveToIndex(index, speed: adjustedSpeed);
+  }
+  
+  /**
+   * If [index] is out of bounds, the nearest valid index is returned.
+   * If [index] is already valid, it is just returned again.
+   */
+  int _getNextValidIndex(int index) {
+    // Ensure left bound.
+    if (index < 0) {
+      return 0;
+    } 
+    
+    // Ensure is in right bound.
+    if (index > _containerElement.children.length - 1) {
+      return _containerElement.children.length - 1;
+    }      
+      
+    // Was already valid, just return index.
+    return index;
   }
   
   /**
    * Calculates the delta movement between [startX] and [endX] coordinates.
    * 
-   * * Result > 0 means sliding to the RIGHT slide.
-   * * Result < 0 means sliding to the LEFT slide.
+   * * Result > 0 means dragging right, possible revealing a slide on the left.
+   * * Result < 0 means dragging left, possible revealing a slide on the right.
    */
-  int _calcDelta(int startX, int endX) {
-    return startX - endX;
+  int _calcDragDelta(int startX, int endX) {
+    return endX - startX;
   }
   
   /**
    * Adds move resistance if first page and sliding left or last page and
    * sliding right.
-   * 
-   * * [deltaX] > 0 means user is sliding to the RIGHT slide.
-   * * [deltaX] < 0 means user is sliding to the LEFT slide.
    */
-  int _addResistance(int deltaX) {
+  int _addResistance(int offset) {
     bool firstPage = !hasPrev();
     bool lastPage = !hasNext();
     
-    if ( (firstPage && deltaX < 0) || (lastPage && deltaX > 0) ) {
+    if ( (firstPage && offset > 0) || (lastPage && offset < 0) ) {
       // Add resistance.
-      return deltaX ~/ (deltaX.abs() / _pageWidth + 1);
+      return offset ~/ (offset.abs() / _pageWidth + 1);
     } else {
       // No resistance.
-      return deltaX; 
+      return offset; 
     }
   }
   
   /**
-   * Returns the height of the highest page.
+   * Helper method to adjusts the [speed] proportionally to the [distance]. 
+   * The [speed] corresponds to the distance of one page ([_swiperWidth]). 
    */
-  int _calcMaxPageHeight() {
-    num pageMaxHeight = 0;
-    _containerElement.children.forEach((child) {
-      pageMaxHeight = math.max(pageMaxHeight, child.borderEdge.height);
-    });
-    return pageMaxHeight.toInt();
-  }
-  
-  /**
-   * Sets the current index to [index]. Ensures the [index] is inside the 
-   * range of possible indexes.
-   */
-  void _setCurrentIndex(int index) {
-    // Ensure index is inside bounds.
-    if (index < 0) {
-      _currentIndex = 0;
-    } else if (index > _containerElement.children.length - 1) {
-      _currentIndex = _containerElement.children.length - 1;
-    } else {
-      _currentIndex = index;
-    }
-  }
-  
-  /**
-   * Calculates the [_currentPageX] from [_currentIndex] and [_pageWidth].
-   * This update must be called whenever [_currentIndex] or [_pageWidth] 
-   * changes.
-   */
-  void _updateCurrentPageX() {
-    _currentPageX = -(_currentIndex * _pageWidth);
-  }
-  
-  /**
-   * Sets the transform translate CSS property on the [_containerElement] to the 
-   * specified [x] value.
-   * 
-   * * [x] > 0 moves the [_containerElement] to the RIGHT (shows slide on the LEFT).
-   * * [x] < 0 moves the [_containerElement] to the LEFT (shows slide on the RIGHT).
-   * 
-   * Optionally the [speed] can be set as duration of the transition animation.
-   * If no [speed] is specified, the default speed is used (proportionally 
-   * adjusted to change in [x]).
-   * 
-   * A transitionEnd event is automatically fired except if the transition
-   * duration is 0ms. If a transitionEnd event is required even in the case of 
-   * 0ms duration, the [forceTransitionEndEvent] must be set to true.
-   */
-  void _setTranslateX(int x, {int speed, bool forceTransitionEndEvent: false}) {
-    if (speed == null) {
-      speed = _adjustSpeed(this._speed, _pageWidth, (x - _currentTranslateX).abs()); 
-    }
-    
-    _log.finest('Setting translate: x=$x, speed=$speed');
-    
-    _currentTranslateX = x;
-    
-    _containerElement.style.transitionDuration = '${speed}ms';
-    
-    // Adding `translateZ(0)` to activate GPU hardware-acceleration in 
-    // browsers that support this (a bit of a hack).
-    _containerElement.style.transform = 'translate(${x}px, 0) translateZ(0)';
-    
-    
-    // Manually fire transition event if speed is 0 as transitionEnd event won't fire.
-    if (forceTransitionEndEvent && speed <= 0) {
-      _log.fine('Transition ended (no animation): currentIndex=$currentIndex');
-      if (_onTransitionEnd != null) {
-        _onTransitionEnd.add(currentIndex);
-      }
-    }
-  }
-  
-  /**
-   * Helper method to adjusts the speed proportionally to the [actualDistance].
-   */
-  int _adjustSpeed(int speed, num pageDistance, num actualDistance) {
-    if (actualDistance > pageDistance) {
+  int _adjustSpeed(int speed, num distance) {
+    if (distance > _pageWidth) {
       return speed;
     }
     
-    return (speed / pageDistance * actualDistance).round();
+    return (speed / _pageWidth * distance).round();
+  }
+  
+  /**
+   * Sets the transform translate property to the [xPercent] value.  
+   */
+  void _translatePercentX(int xPercent) {
+    _containerElement.style.transform = 'translate3d(${xPercent}%, 0, 0)';
+  }
+  
+  /**
+   * Sets the transform translate property to the [xPixel] value.  
+   */
+  void _translatePixelX(int xPixel) {
+    // Unsing `translate3d` to activate GPU hardware-acceleration (a bit of a hack).
+    _containerElement.style.transform = 'translate3d(${xPixel}px, 0, 0)';
+  }
+  
+  /**
+   * Adds the css transition style for the [_containerElement]. The transition is 
+   * for an ease-out animation with duration of [speed].
+   */
+  void _addCssTransition(int speed) {
+    _containerElement.style
+        ..transitionProperty = 'transform'
+        ..transitionDuration = '${speed}ms'
+        ..transitionTimingFunction = 'ease-out';
+  }
+  
+  /**
+   * Removes the css transition style from [_containerElement].
+   */
+  void _removeCssTransition() {
+    _containerElement.style.transition = null;
   }
 }
 

@@ -21,11 +21,14 @@ main() {
   // Write events to TextArea.
   TextAreaElement events = querySelector('#events');
   swiper.onPageChange.listen((index) {
-    events.appendText('PageChange Event: index=${index}\n');
-    events.scrollTop = events.scrollHeight;
+    append(events, 'PageChange Event: index=${index}\n');
   });
-  swiper.onTransitionEnd.listen((index) {
-    events.appendText('TransitionEnd Event: index=${index}\n');
-    events.scrollTop = events.scrollHeight;
+  swiper.onPageTransitionEnd.listen((index) {
+    append(events, 'TransitionEnd Event: index=${index}\n');
   });
+}
+
+void append(TextAreaElement textArea, String text) {
+  textArea.appendText(text);
+  textArea.scrollTop = textArea.scrollHeight;
 }

@@ -5,7 +5,8 @@
   visibility: hidden; /* Hide until layout is ready. */
   width: 500px;
   border: 2px solid;
-  cursor: url(packages/swiper/cursor/openhand.cur) 7 5, move;
+  cursor: url(packages/swiper/cursor/openhand.cur), move; /* Cursor for IE. */
+  cursor: url(packages/swiper/cursor/openhand.cur) 7 5, move; /* Cursor for FF and Chrome (setting midpoint). */
 }
 
 .page-container {
@@ -13,7 +14,7 @@
   height: 100%;
 }
 
-.page-container > div {
+.page {
   position: absolute;
   width: 100%;
   height: 100%;
@@ -22,7 +23,8 @@
 
 /* Show other curser during drag. */
 .swiper-dragging, .swiper-drag-occurring {
-  cursor: url(packages/swiper/cursor/closedhand.cur) 7 5, move;
+  cursor: url(packages/swiper/cursor/closedhand.cur), move; /* Cursor for IE. */
+  cursor: url(packages/swiper/cursor/closedhand.cur) 7 5, move; /* Cursor for FF and Chrome (setting midpoint). */
 }
 
 
