@@ -15,8 +15,13 @@ class Swiper {
   // -------------------
   // Options
   // -------------------
-  /// How many pixels until a swipe is detected.
+  /// If swipe distance is more than [distanceThreshold] (in px), a swipe is 
+  /// detected (regardless of swipe duration).
   int distanceThreshold = 20;
+  
+  /// If swipe duration is less than [durationThreshold] (in ms), a swipe is 
+  /// detected (regardless of swipe distance).
+  int durationThreshold = 250;
   
   /// CSS class set to the swiper element while a user is dragging. Default 
   /// class is 'swiper-dragging'. If null, no css class is added.
@@ -100,6 +105,10 @@ class Swiper {
   
   /// The [DragDetector] used to track drags on the [_containerElement].
   DragDetector _dragDetector;
+  
+  /// Stops the time between a drag start and a drag end to determine if the
+  /// duration was below the [durationThreshold].
+  Stopwatch _dragStopwatch;
   
   /// Width of one slide. 
   int _pageWidth;
@@ -386,6 +395,9 @@ class Swiper {
       document.body.classes.add(dragOccurringClass);
     }
     
+    // Start the stopwatch.
+    _dragStopwatch = new Stopwatch()..start();
+    
     // Ensure there is no transition animation style during the drag operation.
     _removeCssTransition();
   }
@@ -417,6 +429,9 @@ class Swiper {
       document.body.classes.remove(dragOccurringClass);
     }
     
+    // Stop the stopwatch.
+    _dragStopwatch.stop();
+    
     int index = _currentIndex;
     int dragDelta = _calcDragDelta(dragEvent.startCoords.x, dragEvent.coords.x);
         
@@ -424,8 +439,10 @@ class Swiper {
     if (!dragEvent.cancelled) {
       _log.finest('DragEnd: dragDelta=$dragDelta');
       
-      // Determine if we are past the threshold.
-      if (dragDelta.abs() > distanceThreshold) {
+      // Determine if we are past the thresholds.
+      if (dragDelta.abs() > distanceThreshold ||
+          _dragStopwatch.elapsedMilliseconds < durationThreshold) {
+        
         // Direction of swipe. Dragging left means revealing page on the right!
         bool dragLeft = dragDelta < 0;
         
