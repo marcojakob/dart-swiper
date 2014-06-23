@@ -6,7 +6,13 @@ A touch (and mouse) slider for swiping through images and HTML.
 ## Browser Support
 
 Swiper supports all [browsers supported by Dart 1.6 and later]
-(https://www.dartlang.org/support/faq.html#browsers-and-compiling-to-javascript).
+(https://www.dartlang.org/support/faq.html#browsers-and-compiling-to-javascript):
+
+* Internet Explorer, versions 10, and 11.
+* Firefox, latest version.
+* Chrome, latest version.
+* Safari for desktop, version 6.
+* Safari for mobile, version 6.
 
 
 ## Features
@@ -20,6 +26,15 @@ rotated, the swiper and all its pages are resized automatically.
 * **Scroll Prevention.** Swiper detects if the user tries to slide or tries to 
 scroll vertically.
 * **Images or HTML.** Swiper supports any HTML content for swipe pages.
+
+
+## Demos
+
+*All Demos can be found in the `example` folder.*
+
+* [Simple Example](http://marcojakob.github.io/dart-swiper/simple/)
+* [Responsive Images Example](http://marcojakob.github.io/dart-swiper/responsive/)
+* [Method and Events Example](http://marcojakob.github.io/dart-swiper/methods_events/)
 
 
 ## Usage
@@ -77,11 +92,107 @@ A few styles are needed:
 ```
 
 
-## Options
+## Constructor Options
 
-### Soon..
+* `startIndex`: the index position the Swiper should start at - *default: 0*
+* `speed`: the speed of prev and next transitions in milliseconds - 
+  *default: 300*
+* `autoHeightRatio` defines if and how the Swiper should calculate the 
+  height. If defined, the height is calculated from the swiper width with 
+  `autoHeightRatio` and automatically applied when the browser is resized.
+  This is useful, e.g. for responsive images - *default: null*
+* `disableTouch`: defines if swiping with touch should be ignored. 
+  *default: false*
+* `disableMouse`: defines if swiping with mouse should be ignored. 
+  *default: false*
 
-TODO...
+
+#### Example
+
+```Dart
+Swiper swiper = new Swiper(querySelector('.swiper'), 
+    startIndex: 2,
+    speed: 600,
+    autoHeightRatio: 0.66,
+    disableTouch: false,
+    disableMouse: false);
+```
+
+
+## Other Options
+
+* `distanceThreshold`: If swipe distance is more than this threshold (in px), a 
+  swipe is detected (regardless of swipe duration) - *default: 20*
+* `durationThreshold`: If swipe duration is less than this threshold (in ms), a 
+  swipe is detected (regardless of swipe distance) - *default: 250*
+* `draggingClassSwiper`: CSS class set to the swiper element while a user is 
+  dragging. If null, no css class is added - *default: swiper-dragging*
+* `draggingClassBody`: CSS class set to the body tag while a user is 
+  dragging. If null, no css class is added - *default: swiper-dragging*
+
+
+#### Example
+
+```Dart
+Swiper swiper = new Swiper(querySelector('.swiper'));
+
+swiper
+    ..distanceThreshold = 40
+    ..durationThreshold = 300
+    ..draggingClassSwiper = 'my-dragging-class'
+    ..draggingClassBody = null;
+```
+
+
+## Methods
+
+* `currentIndex`: The current page index.
+* `currentPage`: The HTML element of the current page.
+* `moveToIndex(int index, {int speed, bool noEvents: false}`: Moves to the page 
+  at the specified *index*. Optionally, the *speed* of the transition can be 
+  specified. If no events (pageChange and pageTransitionEnd) should be fired, 
+  the *noEvents* flag can be set to true.
+* `next({int speed})`: Moves to the next page.
+* `prev({int speed})`: Moves to the previous page.
+* `hasNext()`: Returns true if there is a next page.
+* `hasPrev()`: Returns true if there is a previous page.
+* `resize()`: Updates the cached page width and the container sizes. The resize
+  method is automatically called when the browser is resized. But if the Swiper
+  is resized other than through browser resizing, the *resize* method must be 
+  called manually.
+* `destroy()`: Unistalls all listeners. This will return the swiper element 
+  back to its pre-init state.
+
+
+#### Example
+
+```Dart
+// Set up method calls for button clicks.
+ButtonElement prevButton = querySelector('#previous-button')
+    ..onClick.listen((_) => swiper.prev());
+ButtonElement nextButton = querySelector('#next-button')
+    ..onClick.listen((_) => swiper.next());
+```
+
+## Events
+
+* `onPageChange`: Fired when the current page changed. The data of the event is 
+  the page index.
+* `onPageTransitionEnd`: Fired when the transition ends after a page change. 
+  Note: when the user swipes again before the previous transition ended, this 
+  event is only fired once, at the end of all page transitions. The data of the
+  event is the page index.
+* `onDragStart`: Fired when the user starts dragging.
+* `onDrag`: Fired periodically throughout the drag operation.
+* `onDragEnd`: Fired when the user ends the dragging.
+
+
+#### Example
+
+```Dart
+swiper.onPageChange.listen((index) {
+  print('PageChange Event: index=${index}');
+});
 
 
 ## Attribution
