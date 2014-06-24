@@ -9,6 +9,8 @@
 <link rel="stylesheet" href="../packages/bootstrap_for_pub/3.1.0/css/bootstrap.css">
 <link rel="stylesheet" href="example.css">
 
+<script async type="application/dart" src="example.dart"></script>
+<script async src="packages/browser/dart.js"></script>
 </head>
 
 <body>
@@ -21,44 +23,15 @@
       browser is resized, the Swiper is automatically adjusted. 
     </p>
     <p>
-    <span class="glyphicon glyphicon-list-alt"></span> 
+    <span class="glyphicon glyphicon-new-window"></span> 
     <a href="https://github.com/marcojakob/dart-swiper/tree/master/example/responsive">
     Example Source on GitHub</a>
     </p>
     
-    <h3>Description</h3>
-    <ul class="list-group">
-      <li class="list-group-item">
-        <strong>Touch and Mouse.</strong> Swipe with either touch or mouse.
-      </li>
-      <li class="list-group-item list-group-item-info">
-        <strong>Responsive.</strong> Recalculates the width and height of the 
-        Swiper whenever the browser is resized.
-      </li>
-      <li class="list-group-item">
-        <strong>Cursor.</strong> Changes cursor during drag.
-      </li>
-      <li class="list-group-item">
-        <strong>Cancel.</strong> Esc-key or window loosing focus cancels the drag.
-      </li>
-      <li class="list-group-item">
-        <strong>Transition.</strong> Default transition speed of 300ms (is 
-        auto-adjusted to the remaining transition distance).
-      </li>
-      <li class="list-group-item">
-        <strong>Scroll Prevention.</strong> Detects if the user swipes 
-        horizontally or scrolls vertically.
-      </li>
-      <li class="list-group-item">
-        <strong>Resistant Bounds.</strong> Increases resistance on left and 
-        right bounds to indicate that user reached the end.
-      </li>
-    </ul>
-  
-  
+      
     <h3>Demo</h3>
   
-    <!-- Swiper code. -->
+    <!------------------------- Swiper code. ------------------------->
     <div class="swiper">
       <div class="page-container">
         <div class="page">
@@ -96,12 +69,42 @@
         </div>
       </div>
     </div>
-    <p>
+    <!--------------------- End of Swiper code. --------------------->
+    
+    <p class="clearfix">
     Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.
     </p>
+    
+    
+    <h3>Description</h3>
+    
+    <ul class="list-group">
+      <li class="list-group-item list-group-item-info">
+        <strong>Responsive.</strong> Recalculates the width and height of the 
+        Swiper whenever the browser is resized.
+      </li>
+      <li class="list-group-item">
+        <strong>Touch and Mouse.</strong> Swipe with either touch or mouse.
+      </li>
+      <li class="list-group-item">
+        <strong>Cursor.</strong> Changes cursor during drag.
+      </li>
+      <li class="list-group-item">
+        <strong>Cancel.</strong> Esc-key or window loosing focus cancels the drag.
+      </li>
+      <li class="list-group-item">
+        <strong>Transition.</strong> Default transition speed of 300ms (is 
+        auto-adjusted to the remaining transition distance).
+      </li>
+      <li class="list-group-item">
+        <strong>Scroll Prevention.</strong> Detects if the user swipes 
+        horizontally or scrolls vertically.
+      </li>
+      <li class="list-group-item">
+        <strong>Resistant Bounds.</strong> Increases resistance on left and 
+        right bounds to indicate that user reached the end.
+      </li>
+    </ul>
   </div>
-  
-  <script type="application/dart" src="example.dart"></script>
-  <script src="packages/browser/dart.js"></script>
 </body>
 </html>

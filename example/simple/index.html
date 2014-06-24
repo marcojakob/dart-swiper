@@ -10,6 +10,8 @@
 <link rel="stylesheet" href="../packages/bootstrap_for_pub/3.1.0/css/bootstrap.css">
 <link rel="stylesheet" href="example.css">
 
+<script async type="application/dart" src="example.dart"></script>
+<script async src="packages/browser/dart.js"></script>
 </head>
 
 <body>
@@ -22,19 +24,43 @@
       This example shows basic use of the Dart Swiper. 
     </p>
     <p>
-    <span class="glyphicon glyphicon-list-alt"></span> 
+    <span class="glyphicon glyphicon-new-window"></span> 
     <a href="https://github.com/marcojakob/dart-swiper/tree/master/example/simple">
     Example Source on GitHub</a>
     </p>
     
+    <h3>Demo</h3>
+
+    <!------------------------- Swiper code. ------------------------->
+    <div class="swiper">
+      <div class="page-container">
+        <div class="page page1">
+          <p>0</p>
+        </div>
+        <div class="page page2">
+          <p>1</p>
+        </div>
+        <div class="page page3">
+          <p>2</p>
+        </div>
+        <div class="page page4">
+          <p>3</p>
+        </div>
+        <div class="page page5">
+          <p>4</p>
+        </div>
+      </div>
+    </div>
+    <!--------------------- End of Swiper code. --------------------->
+    
     <h3>Description</h3>
     <ul class="list-group">
-      <li class="list-group-item">
-        <strong>Touch and Mouse.</strong> Swipe with either touch or mouse.
-      </li>
       <li class="list-group-item list-group-item-info">
         <strong>Non-Responsive.</strong> Predefined width and height of Swiper 
         element.
+      </li>
+      <li class="list-group-item">
+        <strong>Touch and Mouse.</strong> Swipe with either touch or mouse.
       </li>
       <li class="list-group-item">
         <strong>Cursor.</strong> Changes cursor during drag.
@@ -55,32 +81,6 @@
         right bounds to indicate that user reached the end.
       </li>
     </ul>
-      
-    <h3>Demo</h3>
-
-    <!-- Swiper code. -->
-    <div class="swiper">
-      <div class="page-container">
-        <div class="page color1">
-          <p>0</p>
-        </div>
-        <div class="page color2">
-          <p>1</p>
-        </div>
-        <div class="page color3">
-          <p>2</p>
-        </div>
-        <div class="page color4">
-          <p>3</p>
-        </div>
-        <div class="page color5">
-          <p>4</p>
-        </div>
-      </div>
-    </div>
   </div>
-  
-  <script type="application/dart" src="example.dart"></script>
-  <script src="packages/browser/dart.js"></script>
 </body>
 </html>

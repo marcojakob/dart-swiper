@@ -1,12 +1,9 @@
 .swiper {
   overflow: hidden;
   position: relative;
+  height: 400px; /* Declare the height of the swiper. */
   visibility: hidden; /* Hide until layout is ready. */
   border: 2px solid;
-  width: 50%;
-  float: left;
-  margin-right: 10px;
-  max-width: 500px;
   cursor: url(../packages/dnd/cursor/openhand.cur), move; /* Cursor for IE. */
   cursor: url(../packages/dnd/cursor/openhand.cur) 7 5, move; /* Cursor for FF and Chrome (setting midpoint). */
 }
@@ -19,7 +16,7 @@
 .page {
   position: absolute;
   width: 100%;
-  text-align: center;
+  height: 100%;
 }
 
 
@@ -31,7 +28,37 @@
 
 
 /* Page Styling. */
-.page img {
-  max-width: 100%;
-  height: auto;
+.page {
+  color: white;
+  padding: 0 15px;
+}
+
+.page1 {
+  background-color: #00A0B0;
+  font-size: 50px;
+  text-align: center;
+}
+
+.page2 {
+  background-color: #6A4A3C;
+}
+
+.page3 {
+  background-color: #CC333F;
+}
+
+.page3 > .row > div {
+  background-color: #EB6841;
+  border: 1px solid #00A0B0;
+  margin-bottom: 10px;
+  padding: 5px;
+}
+
+.page4 {
+  background-color: #EB6841;
+}
+
+.page5 {
+  background-color: #EDC951;
+  font-size: 20px;
 }

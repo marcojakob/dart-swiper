@@ -5,8 +5,8 @@
   visibility: hidden; /* Hide until layout is ready. */
   width: 500px;
   border: 2px solid;
-  cursor: url(../packages/swiper/cursor/openhand.cur), move; /* Cursor for IE. */
-  cursor: url(../packages/swiper/cursor/openhand.cur) 7 5, move; /* Cursor for FF and Chrome (setting midpoint). */
+  cursor: url(../packages/dnd/cursor/openhand.cur), move; /* Cursor for IE. */
+  cursor: url(../packages/dnd/cursor/openhand.cur) 7 5, move; /* Cursor for FF and Chrome (setting midpoint). */
 }
 
 .page-container {
@@ -22,9 +22,9 @@
 
 
 /* Show other curser during drag. */
-.swiper-dragging {
-  cursor: url(../packages/swiper/cursor/closedhand.cur), move; /* Cursor for IE. */
-  cursor: url(../packages/swiper/cursor/closedhand.cur) 7 5, move; /* Cursor for FF and Chrome (setting midpoint). */
+.swiper-dragging, .swiper-drag-occurring {
+  cursor: url(../packages/dnd/cursor/closedhand.cur), move; /* Cursor for IE. */
+  cursor: url(../packages/dnd/cursor/closedhand.cur) 7 5, move; /* Cursor for FF and Chrome (setting midpoint). */
 }
 
 
@@ -41,22 +41,22 @@
   vertical-align: middle;
 }
 
-.color1 {
+.page1 {
   background-color: #00A0B0;
 }
 
-.color2 {
+.page2 {
   background-color: #6A4A3C;
 }
 
-.color3 {
+.page3 {
   background-color: #CC333F;
 }
 
-.color4 {
+.page4 {
   background-color: #EB6841;
 }
 
-.color5 {
+.page5 {
   background-color: #EDC951;
 }

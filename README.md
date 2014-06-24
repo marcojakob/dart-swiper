@@ -99,8 +99,12 @@ A few styles are needed:
 * `startIndex`: the index position the Swiper should start at - *default: 0*
 * `speed`: the speed of prev and next transitions in milliseconds - 
   *default: 300*
+* `autoWidth`: defines if the Swiper should automatically adjust the width when 
+  the browser is resized. You might want to disable this if you want
+  to manually do some width and height calculations. If disabled, make sure
+  you call the `resize` method after the size of the Swiper changed - *default: true*
 * `autoHeightRatio` defines if and how the Swiper should calculate the 
-  height. If defined, the height is calculated from the swiper width with 
+  height. If defined, the height is calculated from the Swiper's width with 
   `autoHeightRatio` and automatically applied when the browser is resized.
   This is useful, e.g. for responsive images - *default: null*
 * `disableTouch`: defines if swiping with touch should be ignored. 
@@ -115,6 +119,7 @@ A few styles are needed:
 Swiper swiper = new Swiper(querySelector('.swiper'), 
     startIndex: 2,
     speed: 600,
+    autoWidth: true,
     autoHeightRatio: 0.66,
     disableTouch: false,
     disableMouse: false);
