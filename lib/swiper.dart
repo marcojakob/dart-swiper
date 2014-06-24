@@ -182,6 +182,9 @@ class Swiper {
     
     // Install transitionEnd listener.
     _subs.add(_containerElement.onTransitionEnd.listen((_) {
+      // Remove css animation transition style.
+      _removeCssTransition();
+      
       if (_fireNextPageTransitionEnd) {
         _firePageTransitionEndEvent();
       }
