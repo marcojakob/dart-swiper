@@ -1,5 +1,7 @@
 # Swiper
 
+[![Build Status](https://drone.io/github.com/marcojakob/dart-swiper/status.png)](https://drone.io/github.com/marcojakob/dart-swiper/latest)
+
 A touch (and mouse) slider for swiping through images and HTML.
 
 
