@@ -17,20 +17,11 @@ class Swiper {
   // -------------------
   /// If swipe distance is more than [distanceThreshold] (in px), a swipe is 
   /// detected (regardless of swipe duration).
-  int distanceThreshold = 20;
+  int distanceThreshold;
   
   /// If swipe duration is less than [durationThreshold] (in ms), a swipe is 
   /// detected (regardless of swipe distance).
-  int durationThreshold = 250;
-  
-  /// CSS class set to the [swiperElement] while a user is dragging. Default 
-  /// class is 'swiper-dragging'. If null, no css class is added.
-  String draggingClassSwiper = 'swiper-dragging';
-  
-  /// CSS class set to the html body tag during a drag. Default is 
-  /// 'swiper-dragging'. If null, no CSS class is added.
-  String draggingClassBody = 'swiper-dragging';
-  
+  int durationThreshold;
   
   // -------------------
   // Events
@@ -101,6 +92,9 @@ class Swiper {
   /// Speed of prev and next transitions in milliseconds. 
   final int _speed;
   
+  /// If true the 
+  final bool _autoWidth;
+  
   /// The aspect ratio of the Swiper if it should be automatically applied.
   final double _autoHeightRatio;
   
@@ -133,24 +127,62 @@ class Swiper {
    * 
    * ## Options
    * 
-   * * [startIndex] is the index position the Swiper should start at. 
-   *   (default: 0)
-   * * [speed] is the speed of prev and next transitions in milliseconds. 
-   *   (default: 300)
-   * * [autoHeightRatio] defines if and how the Swiper should calculate the 
-   *   height. If defined, the height is calculated from the swiper width with 
-   *   [autoHeightRatio] and automatically applied when the browser is resized.
-   *   This is useful, e.g. for responsive images.
-   * * [disableTouch] defines if swiping with touch should be ignored. 
-   *   (default: false)
-   * * [disableMouse] defines if swiping with mouse should be ignored. 
-   *   (default: false)
+   * [startIndex] is the index position the Swiper should start at.
+   * 
+   * [speed] is the speed of prev and next transitions in milliseconds. 
+   * 
+   * [autoWidth] defines if the Swiper should automatically adjust the width
+   * when the browser is resized. You might want to disable this if you want
+   * to manually do some width and height calculations. If disabled make sure
+   * you call [resize] after the size of the Swiper changed.
+   * 
+   * [autoHeightRatio] defines if and how the Swiper should calculate the 
+   * height. If defined, the height is calculated from the Swiper's width with 
+   * [autoHeightRatio] and automatically applied when the browser is resized.
+   * This is useful, e.g. for responsive images.
+   * 
+   * [disableTouch] defines if swiping with touch should be ignored. 
+   * 
+   * [disableMouse] defines if swiping with mouse should be ignored. 
+   * 
+   * If a [handle] query String is specified, it restricts the dragging from 
+   * starting unless it occurs on the specified element(s). Only elements that 
+   * descend from [swiperElement] are permitted. 
+   * 
+   * If [cancel] query String is specified, drag starting is prevented on 
+   * specified elements.
+   * 
+   * If swipe distance is more than [distanceThreshold] (in px), a swipe is 
+   * detected (regardless of swipe duration).
+   * 
+   * If swipe duration is less than [durationThreshold] (in ms), a swipe is  
+   * detected (regardless of swipe distance).
+   * 
+   * The [draggingClassSwiper] is the css class set to the [swiperElement] 
+   * while a user is dragging.
+   * 
+   * The [draggingClassBody] is the css class set to the html body tag
+   * while a user is dragging.
    */
-  Swiper(Element swiperElement, {int startIndex: 0, int speed: 300, 
-    double autoHeightRatio: null, bool disableTouch: false, bool disableMouse: false}) 
+  Swiper(Element swiperElement, 
+      { int startIndex: 0, 
+        int speed: 300, 
+        bool autoWidth: true, 
+        double autoHeightRatio: null, 
+        this.distanceThreshold: 20,
+        this.durationThreshold: 250,
+        bool disableTouch: false, 
+        bool disableMouse: false,
+        String handle: null, 
+        String cancel: 'input,textarea,button,select,option',
+        String draggingClassSwiper: 'swiper-dragging',
+        String draggingClassBody: 'swiper-drag-occurring'})
+        
       : this._swiperElement = swiperElement,
-        this._speed = speed, this._autoHeightRatio = autoHeightRatio {
-      
+        this._speed = speed, 
+        this._autoWidth = autoWidth,
+        this._autoHeightRatio = autoHeightRatio {
+    
     _log.fine('Initializing Swiper');
     
     // Get the page-container.
@@ -169,8 +201,13 @@ class Swiper {
     _swiperElement.style.visibility = 'visible';
 
     // Set up the DragDetector on the swiper.
-    _dragDetector = new DragDetector.forElement(_swiperElement, 
-        disableTouch: disableTouch, disableMouse: disableMouse);
+    _dragDetector = new DragDetector(_swiperElement, 
+        disableTouch: disableTouch, 
+        disableMouse: disableMouse, 
+        handle: handle,
+        cancel: cancel,
+        draggingClassElement: draggingClassSwiper, 
+        draggingClassBody: draggingClassBody);
     
     // Swiping is only done horizontally.
     _dragDetector.horizontalOnly = true;
@@ -190,12 +227,14 @@ class Swiper {
       }
     }));
     
-    // Install browser resize listener. This is done asynchronously after the 
-    // visibility has been applied, because setting visibility would somethimes
-    // trigger a resize event.
-    new Future(() {
-      _subs.add(window.onResize.listen((_) => resize()));
-    });
+    if (_autoWidth) {
+      // Install browser resize listener. This is done asynchronously after the 
+      // visibility has been applied, because setting visibility would somethimes
+      // trigger a resize event.
+      new Future(() {
+        _subs.add(window.onResize.listen((_) => resize()));
+      });
+    }
   }
   
   /**
@@ -371,9 +410,9 @@ class Swiper {
     _containerElement.style.width = '${_pageWidth}px';
     
     if (_autoHeightRatio != null) {
+      // Calculate the height with the provided aspect ratio.
       _containerElement.style.height = '${(_pageWidth * _autoHeightRatio).round()}px';
     }
-    
   }
   
   /**
@@ -391,14 +430,6 @@ class Swiper {
    * Handles drag start.
    */
   void _handleDragStart(DragEvent dragEvent) {
-    // Add the css classes during the drag operation.
-    if (draggingClassSwiper != null) {
-      _swiperElement.classes.add(draggingClassSwiper);
-    }
-    if (draggingClassBody != null) {
-      document.body.classes.add(draggingClassBody);
-    }
-    
     // Start the stopwatch.
     _dragStopwatch = new Stopwatch()..start();
     
@@ -425,14 +456,6 @@ class Swiper {
    * Handles drag end.
    */
   void _handleDragEnd(DragEvent dragEvent) {
-    // Remove the css classes.
-    if (draggingClassSwiper != null) {
-      _swiperElement.classes.remove(draggingClassSwiper);
-    }
-    if (draggingClassBody != null) {
-      document.body.classes.remove(draggingClassBody);
-    }
-    
     // Stop the stopwatch.
     _dragStopwatch.stop();
     
