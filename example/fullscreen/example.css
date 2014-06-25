@@ -1,0 +1,64 @@
+html, body {
+  height: 100%;
+}
+
+.swiper {
+  overflow: hidden;
+  position: relative;
+  height: 100%; /* Declare the height of the swiper. */
+  visibility: hidden; /* Hide until layout is ready. */
+  width: 100%;
+  cursor: url(../packages/dnd/cursor/openhand.cur), move; /* Cursor for IE. */
+  cursor: url(../packages/dnd/cursor/openhand.cur) 7 5, move; /* Cursor for FF and Chrome (setting midpoint). */
+}
+
+.page-container {
+  position: relative;
+  height: 100%;
+}
+
+.page {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+}
+
+.swiper-dragging, .swiper-drag-occurring {
+  cursor: url(../packages/dnd/cursor/closedhand.cur), move; /* Cursor for IE. */
+  cursor: url(../packages/dnd/cursor/closedhand.cur) 7 5, move; /* Cursor for FF and Chrome (setting midpoint). */
+}
+
+/* Page Styling. */
+.page {
+  color: white;
+}
+
+.page a, .page h1 small {
+  color: #CCC;
+}
+
+.page1 {
+  background-color: #00A0B0;
+}
+
+.page2 {
+  background-color: #6A4A3C;
+}
+
+.page3 {
+  background-color: #CC333F;
+}
+
+.page4 {
+  background-color: #EB6841;
+}
+
+.page5 {
+  background-color: #EDC951;
+}
+
+.big {
+  margin-top: 100px;
+  font-size: 60px;
+  text-align: center;
+}

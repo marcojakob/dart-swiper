@@ -37,6 +37,8 @@ scroll vertically.
 * [Simple Example](http://marcojakob.github.io/dart-swiper/simple/)
 * [Responsive Images Example](http://marcojakob.github.io/dart-swiper/responsive/)
 * [Method and Events Example](http://marcojakob.github.io/dart-swiper/methods_events/)
+* [HTML Content Example](http://marcojakob.github.io/dart-swiper/html_content/)
+* [Fullscreen Example](http://marcojakob.github.io/dart-swiper/fullscreen/)
 
 
 ## Usage
