@@ -13,17 +13,6 @@ final _log = new Logger('swiper');
 class Swiper {
   
   // -------------------
-  // Options
-  // -------------------
-  /// If swipe distance is more than [distanceThreshold] (in px), a swipe is 
-  /// detected (regardless of swipe duration).
-  int distanceThreshold;
-  
-  /// If swipe duration is less than [durationThreshold] (in ms), a swipe is 
-  /// detected (regardless of swipe distance).
-  int durationThreshold;
-  
-  // -------------------
   // Events
   // -------------------
   StreamController<int> _onPageChange;
@@ -75,7 +64,6 @@ class Swiper {
    * Fired when the user ends the dragging. 
    * 
    * Is also fired when the user clicks the 'esc'-key or the window loses focus. 
-   * For those two cases, the mouse positions of [DragEvent] will be null.
    */
   Stream<DragEvent> get onDragEnd => _dragDetector.onDragEnd;
   
@@ -98,11 +86,19 @@ class Swiper {
   /// The aspect ratio of the Swiper if it should be automatically applied.
   final double _autoHeightRatio;
   
+  /// If swipe distance is more than [_distanceThreshold] (in px), a swipe is 
+  /// detected (regardless of swipe duration).
+  int _distanceThreshold;
+  
+  /// If swipe duration is less than [_durationThreshold] (in ms), a swipe is 
+  /// detected (regardless of swipe distance).
+  int _durationThreshold;
+  
   /// The [DragDetector] used to track drags on the [_containerElement].
   DragDetector _dragDetector;
   
   /// Stops the time between a drag start and a drag end to determine if the
-  /// duration was below the [durationThreshold].
+  /// duration was below the [_durationThreshold].
   Stopwatch _dragStopwatch;
   
   /// Width of one slide. 
@@ -158,30 +154,32 @@ class Swiper {
    * If swipe duration is less than [durationThreshold] (in ms), a swipe is  
    * detected (regardless of swipe distance).
    * 
-   * The [draggingClassSwiper] is the css class set to the [swiperElement] 
-   * while a user is dragging.
+   * The [draggingClass] is the css class set to the [swiperElement] 
+   * while a user is dragging. If set to null, no such css class is added.
    * 
    * The [draggingClassBody] is the css class set to the html body tag
-   * while a user is dragging.
+   * while a user is dragging. If set to null, no such css class is added.
    */
   Swiper(Element swiperElement, 
       { int startIndex: 0, 
         int speed: 300, 
         bool autoWidth: true, 
         double autoHeightRatio: null, 
-        this.distanceThreshold: 20,
-        this.durationThreshold: 250,
+        int distanceThreshold: 20,
+        int durationThreshold: 250,
         bool disableTouch: false, 
         bool disableMouse: false,
         String handle: null, 
-        String cancel: 'input,textarea,button,select,option',
-        String draggingClassSwiper: 'swiper-dragging',
+        String cancel: 'input, textarea, button, select, option',
+        String draggingClass: 'swiper-dragging',
         String draggingClassBody: 'swiper-drag-occurring'})
         
       : this._swiperElement = swiperElement,
         this._speed = speed, 
         this._autoWidth = autoWidth,
-        this._autoHeightRatio = autoHeightRatio {
+        this._autoHeightRatio = autoHeightRatio,
+        this._distanceThreshold = distanceThreshold, 
+        this._durationThreshold = durationThreshold {
     
     _log.fine('Initializing Swiper');
     
@@ -206,11 +204,9 @@ class Swiper {
         disableMouse: disableMouse, 
         handle: handle,
         cancel: cancel,
-        draggingClassElement: draggingClassSwiper, 
-        draggingClassBody: draggingClassBody);
-    
-    // Swiping is only done horizontally.
-    _dragDetector.horizontalOnly = true;
+        draggingClassElement: draggingClass, 
+        draggingClassBody: draggingClassBody,
+        horizontalOnly: true); // Swiping is only done horizontally.
     
     // Listen for drag events.
     _subs.add(_dragDetector.onDragStart.listen(_handleDragStart));
@@ -467,8 +463,8 @@ class Swiper {
       _log.finest('DragEnd: dragDelta=$dragDelta');
       
       // Determine if we are past the thresholds.
-      if (dragDelta.abs() > distanceThreshold ||
-          _dragStopwatch.elapsedMilliseconds < durationThreshold) {
+      if (dragDelta.abs() > _distanceThreshold ||
+          _dragStopwatch.elapsedMilliseconds < _durationThreshold) {
         
         // Direction of swipe. Dragging left means revealing page on the right!
         bool dragLeft = dragDelta < 0;
