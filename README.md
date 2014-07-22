@@ -32,13 +32,13 @@ scroll vertically.
 
 ## Demos
 
-*All Demos can be found in the `example` folder.*
-
 * [Simple Example](http://marcojakob.github.io/dart-swiper/simple/)
 * [Responsive Images Example](http://marcojakob.github.io/dart-swiper/responsive/)
-* [Method and Events Example](http://marcojakob.github.io/dart-swiper/methods_events/)
-* [HTML Content Example](http://marcojakob.github.io/dart-swiper/html_content/)
+* [Method and Events Example](http://marcojakob.github.io/dart-swiper/methods-events/)
+* [HTML Content Example](http://marcojakob.github.io/dart-swiper/html-content/)
 * [Fullscreen Example](http://marcojakob.github.io/dart-swiper/fullscreen/)
+
+*All Demos can also be found in the `example` folder.*
 
 
 ## Usage
@@ -109,10 +109,23 @@ A few styles are needed:
   height. If defined, the height is calculated from the Swiper's width with 
   `autoHeightRatio` and automatically applied when the browser is resized.
   This is useful, e.g. for responsive images - *default: null*
-* `disableTouch`: defines if swiping with touch should be ignored. 
-  *default: false*
-* `disableMouse`: defines if swiping with mouse should be ignored. 
-  *default: false*
+* `distanceThreshold`: If swipe distance is more than the `distanceTreshold`
+  (in px), a swipe is detected (regardless of swipe duration) - *default: 20*
+* `durationThreshold`: If swipe duration is less than the `durationTreshold` 
+  (in ms), a swipe is detected (regardless of swipe distance) - *default: 250*
+* `handle`: If handle query String is specified, it restricts the dragging from 
+  starting unless it occurs on the specified element(s). Only elements that 
+  descend from the `swiperElement` are permitted -
+  *default: null*
+* `cancel`: If cancel query String is specified, drag starting is prevented on 
+  specified elements - 
+  *default: input, textarea, button, select, option*
+* `draggingClass`: Is the CSS class set to the `swiperElement` while a user is
+  dragging. If set to `null`, no such CSS class is added - 
+  *default: swiper-dragging*
+* `draggingClassBody`: Is the CSS class set to the html `body` tag while a user is
+  dragging. If set to `null`, no such CSS class is added -
+  *default: swiper-drag-occurring*
 
 
 #### Example
@@ -122,34 +135,7 @@ Swiper swiper = new Swiper(querySelector('.swiper'),
     startIndex: 2,
     speed: 600,
     autoWidth: true,
-    autoHeightRatio: 0.66,
-    disableTouch: false,
-    disableMouse: false);
-```
-
-
-## Other Options
-
-* `distanceThreshold`: If swipe distance is more than this threshold (in px), a 
-  swipe is detected (regardless of swipe duration) - *default: 20*
-* `durationThreshold`: If swipe duration is less than this threshold (in ms), a 
-  swipe is detected (regardless of swipe distance) - *default: 250*
-* `draggingClassSwiper`: CSS class set to the swiper element while a user is 
-  dragging. If null, no css class is added - *default: swiper-dragging*
-* `draggingClassBody`: CSS class set to the body tag while a user is 
-  dragging. If null, no css class is added - *default: swiper-dragging*
-
-
-#### Example
-
-```Dart
-Swiper swiper = new Swiper(querySelector('.swiper'));
-
-swiper
-    ..distanceThreshold = 40
-    ..durationThreshold = 300
-    ..draggingClassSwiper = 'my-dragging-class'
-    ..draggingClassBody = null;
+    autoHeightRatio: 0.66);
 ```
 
 
@@ -188,7 +174,7 @@ ButtonElement nextButton = querySelector('#next-button')
 * `onPageChange`: Fired when the current page changed. The data of the event is 
   the page index.
 * `onPageTransitionEnd`: Fired when the transition ends after a page change. 
-  Note: when the user swipes again before the previous transition ended, this 
+  Note: If the user swipes again before the previous transition ended, this 
   event is only fired once, at the end of all page transitions. The data of the
   event is the page index.
 * `onDragStart`: Fired when the user starts dragging.
