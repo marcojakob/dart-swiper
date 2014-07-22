@@ -8,5 +8,6 @@ dependencies:
   logging: any
   dnd:
     git: git://github.com/marcojakob/dart-dnd.git
+    version: '>=0.1.1 <0.2.0'
 dev_dependencies:
   bootstrap_for_pub: any
