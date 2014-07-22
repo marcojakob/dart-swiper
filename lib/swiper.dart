@@ -3,7 +3,7 @@ library swiper;
 import 'dart:html';
 import 'dart:async';
 import 'package:logging/logging.dart';
-import 'package:dnd/drag_detector.dart';
+import 'package:dnd/dnd.dart';
 
 final _log = new Logger('swiper');
 
@@ -32,7 +32,7 @@ class Swiper {
   }
   
   /**
-   * Fired when the transition ends after a page change. When the user swipes 
+   * Fired when the transition ends after a page change. If the user swipes 
    * again before the previous transition ended, this event is only fired once, 
    * at the end of all page transitions.
    * 
@@ -53,19 +53,19 @@ class Swiper {
    * soon as there is a drag movement. When a drag is started an [onDrag] event 
    * will also be fired.
    */
-  Stream<DragEvent> get onDragStart => _dragDetector.onDragStart;
+  Stream<DraggableEvent> get onDragStart => _draggable.onDragStart;
   
   /**
    * Fired periodically throughout the drag operation. 
    */
-  Stream<DragEvent> get onDrag => _dragDetector.onDrag;
+  Stream<DraggableEvent> get onDrag => _draggable.onDrag;
   
   /**
    * Fired when the user ends the dragging. 
    * 
    * Is also fired when the user clicks the 'esc'-key or the window loses focus. 
    */
-  Stream<DragEvent> get onDragEnd => _dragDetector.onDragEnd;
+  Stream<DraggableEvent> get onDragEnd => _draggable.onDragEnd;
   
   
   // -------------------
@@ -94,8 +94,8 @@ class Swiper {
   /// detected (regardless of swipe distance).
   int _durationThreshold;
   
-  /// The [DragDetector] used to track drags on the [_containerElement].
-  DragDetector _dragDetector;
+  /// The [Draggable] used to track drags on the [_containerElement].
+  Draggable _draggable;
   
   /// Stops the time between a drag start and a drag end to determine if the
   /// duration was below the [_durationThreshold].
@@ -137,10 +137,6 @@ class Swiper {
    * [autoHeightRatio] and automatically applied when the browser is resized.
    * This is useful, e.g. for responsive images.
    * 
-   * [disableTouch] defines if swiping with touch should be ignored. 
-   * 
-   * [disableMouse] defines if swiping with mouse should be ignored. 
-   * 
    * If a [handle] query String is specified, it restricts the dragging from 
    * starting unless it occurs on the specified element(s). Only elements that 
    * descend from [swiperElement] are permitted. 
@@ -167,8 +163,6 @@ class Swiper {
         double autoHeightRatio: null, 
         int distanceThreshold: 20,
         int durationThreshold: 250,
-        bool disableTouch: false, 
-        bool disableMouse: false,
         String handle: null, 
         String cancel: 'input, textarea, button, select, option',
         String draggingClass: 'swiper-dragging',
@@ -198,20 +192,18 @@ class Swiper {
     // We're ready, set to visible.
     _swiperElement.style.visibility = 'visible';
 
-    // Set up the DragDetector on the swiper.
-    _dragDetector = new DragDetector(_swiperElement, 
-        disableTouch: disableTouch, 
-        disableMouse: disableMouse, 
+    // Set up the Draggable on the swiper.
+    _draggable = new Draggable(_swiperElement,
         handle: handle,
         cancel: cancel,
-        draggingClassElement: draggingClass, 
+        draggingClass: draggingClass, 
         draggingClassBody: draggingClassBody,
         horizontalOnly: true); // Swiping is only done horizontally.
     
     // Listen for drag events.
-    _subs.add(_dragDetector.onDragStart.listen(_handleDragStart));
-    _subs.add(_dragDetector.onDrag.listen(_handleDrag));
-    _subs.add(_dragDetector.onDragEnd.listen(_handleDragEnd));
+    _subs.add(_draggable.onDragStart.listen(_handleDragStart));
+    _subs.add(_draggable.onDrag.listen(_handleDrag));
+    _subs.add(_draggable.onDragEnd.listen(_handleDragEnd));
     
     // Install transitionEnd listener.
     _subs.add(_containerElement.onTransitionEnd.listen((_) {
@@ -418,14 +410,14 @@ class Swiper {
   void destroy() {
     _subs.forEach((sub) => sub.cancel());
     _subs.clear();
-    _dragDetector.destroy();
-    _dragDetector = null;
+    _draggable.destroy();
+    _draggable = null;
   }
   
   /**
    * Handles drag start.
    */
-  void _handleDragStart(DragEvent dragEvent) {
+  void _handleDragStart(DraggableEvent dragEvent) {
     // Start the stopwatch.
     _dragStopwatch = new Stopwatch()..start();
     
@@ -436,8 +428,8 @@ class Swiper {
   /**
    * Handles drag.
    */
-  void _handleDrag(DragEvent dragEvent) {
-    int deltaX = _calcDragDelta(dragEvent.startCoords.x, dragEvent.coords.x);
+  void _handleDrag(DraggableEvent dragEvent) {
+    int deltaX = _calcDragDelta(dragEvent.startPosition.x, dragEvent.position.x);
     
     _log.finest('Drag: deltaX=$deltaX');
 
@@ -451,14 +443,16 @@ class Swiper {
   /**
    * Handles drag end.
    */
-  void _handleDragEnd(DragEvent dragEvent) {
+  void _handleDragEnd(DraggableEvent dragEvent) {
     // Stop the stopwatch.
     _dragStopwatch.stop();
     
     int index = _currentIndex;
-    int dragDelta = _calcDragDelta(dragEvent.startCoords.x, dragEvent.coords.x);
+    int dragDelta = _calcDragDelta(dragEvent.startPosition.x, dragEvent.position.x);
         
-    // Determine if the drag leads to a new index.
+    // Determine if the drag leads to a new index. If the event was cancelled
+    // we go back to last index. Otherwise, we check if thresholds for new 
+    // index were met.
     if (!dragEvent.cancelled) {
       _log.finest('DragEnd: dragDelta=$dragDelta');
       
