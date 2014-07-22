@@ -7,8 +7,7 @@ A touch (and mouse) slider for swiping through images and HTML.
 
 ## Browser Support
 
-Swiper supports all [browsers supported by Dart 1.6 and later]
-(https://www.dartlang.org/support/faq.html#browsers-and-compiling-to-javascript):
+Swiper supports all [browsers supported by Dart 1.6 and later](https://www.dartlang.org/support/faq.html#browsers-and-compiling-to-javascript):
 
 * Internet Explorer, versions 10, and 11.
 * Firefox, latest version.
@@ -20,8 +19,7 @@ Swiper supports all [browsers supported by Dart 1.6 and later]
 ## Features
 
 * **Touch and Mouse.** Slide either on a touch screen or with the mouse.
-* **Smooth Transitions.** Swiper uses [Hardware-accelerated CSS3 transitions]
-(http://blog.teamtreehouse.com/increase-your-sites-performance-with-hardware-accelerated-css) 
+* **Smooth Transitions.** Swiper uses [Hardware-accelerated CSS3 transitions](http://blog.teamtreehouse.com/increase-your-sites-performance-with-hardware-accelerated-css) 
 for smooth animations. 
 * **Auto Resizing.** When the browser window is resized or a mobile device is 
 rotated, the swiper and all its pages are resized automatically. 
