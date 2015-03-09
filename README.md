@@ -1,8 +1,14 @@
 # Swiper
 
+A touch (and mouse) slider for swiping through images and HTML.
+
+[![Star this Repo](https://img.shields.io/github/stars/marcojakob/dart-swiper.svg?style=flat-square)](https://github.com/marcojakob/dart-swiper)
+[![Pub Package](https://img.shields.io/pub/v/swiper.svg?style=flat-square)](https://pub.dartlang.org/packages/swiper)
 [![Build Status](https://drone.io/github.com/marcojakob/dart-swiper/status.png)](https://drone.io/github.com/marcojakob/dart-swiper/latest)
 
-A touch (and mouse) slider for swiping through images and HTML.
+[GitHub](https://github.com/marcojakob/dart-swiper) | 
+[Pub](https://pub.dartlang.org/packages/swiper) | 
+[Demos and Examples](http://code.makery.ch/library/dart-swiper/)
 
 
 ## Browser Support
