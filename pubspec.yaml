@@ -1,12 +1,12 @@
 name: swiper
-version: 0.0.2+1
+version: 0.0.3
 author: Marco Jakob <majakob@gmx.ch>
 description: A touch and mouse slider for swiping through images and html.
 homepage: https://github.com/marcojakob/dart-swiper
-documentation: http://www.dartdocs.org/documentation/swiper/0.0.2/
+documentation: http://www.dartdocs.org/documentation/swiper/latest/
 dependencies:
   browser: '>=0.10.0+2 <0.11.0'
-  dnd: '>=0.1.1 <0.2.0'
+  dnd: '>=0.2.1 <0.3.0'
   logging: '>=0.9.1 <0.10.0'
 dev_dependencies:
   bootstrap_for_pub: 3.1.0+2
