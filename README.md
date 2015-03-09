@@ -8,7 +8,7 @@ A touch (and mouse) slider for swiping through images and HTML.
 
 [GitHub](https://github.com/marcojakob/dart-swiper) | 
 [Pub](https://pub.dartlang.org/packages/swiper) | 
-[Demos and Examples](http://code.makery.ch/library/dart-swiper/)
+[Demos and Examples](http://marcojakob.github.io/dart-swiper/)
 
 
 ## Browser Support
