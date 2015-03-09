@@ -1,0 +1,37 @@
+.swiper {
+  overflow: hidden;
+  position: relative;
+  visibility: hidden; /* Hide until layout is ready. */
+  border: 2px solid;
+  width: 50%;
+  float: left;
+  margin-right: 10px;
+  max-width: 500px;
+  cursor: url(../packages/dnd/cursor/openhand.cur), move; /* Cursor for IE. */
+  cursor: url(../packages/dnd/cursor/openhand.cur) 7 5, move; /* Cursor for FF and Chrome (setting midpoint). */
+}
+
+.page-container {
+  position: relative;
+  height: 100%;
+}
+
+.page {
+  position: absolute;
+  width: 100%;
+  text-align: center;
+}
+
+
+/* Show other curser during drag. */
+.swiper-dragging, .swiper-drag-occurring {
+  cursor: url(../packages/dnd/cursor/closedhand.cur), move; /* Cursor for IE. */
+  cursor: url(../packages/dnd/cursor/closedhand.cur) 7 5, move; /* Cursor for FF and Chrome (setting midpoint). */
+}
+
+
+/* Page Styling. */
+.page img {
+  max-width: 100%;
+  height: auto;
+}
